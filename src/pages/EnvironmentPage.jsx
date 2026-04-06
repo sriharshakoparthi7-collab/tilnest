@@ -5,7 +5,7 @@ import { Plus, Upload, Download, Search, Import } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import AddEntryDialog from "../components/AddEntryDialog";
+import GHGEntryDialog from "../components/GHGEntryDialog";
 import EmissionsTable from "../components/EmissionsTable";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, LineChart, Line, XAxis, YAxis, CartesianGrid, Legend } from "recharts";
 
@@ -371,7 +371,7 @@ export default function EnvironmentPage() {
         </div>
       )}
 
-      <AddEntryDialog
+      <GHGEntryDialog
         open={showDialog}
         onClose={() => { setShowDialog(false); setEditEntry(null); }}
         onSaved={load}
