@@ -1,0 +1,189 @@
+{
+  "name": "PurchaseEntry",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "title": "Product / Service Name"
+    },
+    "supplier_name": {
+      "type": "string",
+      "title": "Supplier Name"
+    },
+    "item_type": {
+      "type": "string",
+      "title": "Item Type",
+      "enum": [
+        "Consumable / Raw Material",
+        "Asset / Machinery",
+        "Fuel / Energy-Related",
+        "Service"
+      ]
+    },
+    "quantity": {
+      "type": "number",
+      "title": "Quantity"
+    },
+    "unit": {
+      "type": "string",
+      "title": "Unit (kg, units, m\u00b3...)"
+    },
+    "total_weight_kg": {
+      "type": "number",
+      "title": "Total Weight (kg)"
+    },
+    "purchase_value_usd": {
+      "type": "number",
+      "title": "Purchase Value (USD)"
+    },
+    "currency": {
+      "type": "string",
+      "title": "Currency",
+      "default": "USD"
+    },
+    "sector_code": {
+      "type": "string",
+      "title": "Industry / Sector"
+    },
+    "transport_responsible": {
+      "type": "string",
+      "title": "Who Pays for Transport?",
+      "enum": [
+        "Supplier Paid (Bundled)",
+        "Client Paid / Ex-Works"
+      ]
+    },
+    "transport_distance_km": {
+      "type": "number",
+      "title": "Transport Distance (km)"
+    },
+    "transport_mode": {
+      "type": "string",
+      "title": "Transport Mode",
+      "enum": [
+        "Road",
+        "Rail",
+        "Sea",
+        "Air",
+        "Mixed"
+      ]
+    },
+    "data_tier": {
+      "type": "string",
+      "title": "Data Tier Available",
+      "enum": [
+        "Tier 1 \u2013 EPD / Verified LCA",
+        "Tier 2 \u2013 Supplier Scope 1&2 + BOM",
+        "Tier 3 \u2013 BOM + Industry Averages",
+        "Tier 4 \u2013 Spend-Based Only"
+      ]
+    },
+    "epd_factor_kgco2e_per_unit": {
+      "type": "number",
+      "title": "EPD Factor (kgCO\u2082e/unit) \u2014 Tier 1"
+    },
+    "supplier_scope1_kgco2e": {
+      "type": "number",
+      "title": "Supplier Scope 1 Emissions (kgCO\u2082e) \u2014 Tier 2"
+    },
+    "supplier_scope2_kgco2e": {
+      "type": "number",
+      "title": "Supplier Scope 2 Emissions (kgCO\u2082e) \u2014 Tier 2"
+    },
+    "supplier_total_output_kg": {
+      "type": "number",
+      "title": "Supplier Total Factory Output (kg) \u2014 Tier 2"
+    },
+    "supplier_total_revenue_usd": {
+      "type": "number",
+      "title": "Supplier Total Revenue (USD) \u2014 Tier 2"
+    },
+    "supplier_machine_hours_total": {
+      "type": "number",
+      "title": "Supplier Total Machine Hours \u2014 Tier 2"
+    },
+    "product_machine_hours": {
+      "type": "number",
+      "title": "Machine Hours for This Product \u2014 Tier 2"
+    },
+    "bom": {
+      "type": "array",
+      "title": "Bill of Materials (BOM)",
+      "items": {
+        "type": "object",
+        "properties": {
+          "material": {
+            "type": "string"
+          },
+          "weight_kg": {
+            "type": "number"
+          },
+          "scrap_rate_pct": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "allocation_method": {
+      "type": "string",
+      "title": "Allocation Method",
+      "enum": [
+        "Machine Hours",
+        "Mass-Based",
+        "Economic",
+        "Industry Estimate"
+      ]
+    },
+    "client_region": {
+      "type": "string",
+      "title": "Client Region (for End-of-Life)",
+      "enum": [
+        "Victoria",
+        "NSW",
+        "Queensland",
+        "WA",
+        "SA",
+        "Tasmania",
+        "ACT",
+        "NT",
+        "Other"
+      ]
+    },
+    "location_type": {
+      "type": "string",
+      "title": "Location Type",
+      "enum": [
+        "Metro",
+        "Regional"
+      ]
+    },
+    "reporting_year": {
+      "type": "number",
+      "title": "Reporting Year"
+    },
+    "notes": {
+      "type": "string",
+      "title": "Notes"
+    },
+    "result_json": {
+      "type": "string",
+      "title": "Calculation Result (JSON)"
+    },
+    "status": {
+      "type": "string",
+      "title": "Status",
+      "enum": [
+        "Draft",
+        "Calculated",
+        "Reviewed",
+        "Approved"
+      ],
+      "default": "Draft"
+    }
+  },
+  "required": [
+    "name",
+    "item_type",
+    "data_tier"
+  ]
+}
