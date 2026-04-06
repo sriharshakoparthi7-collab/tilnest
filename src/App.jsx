@@ -14,7 +14,6 @@ import Scope3Categories from './pages/Scope3Categories';
 import Reports from './pages/Reports';
 import DataManagement from './pages/DataManagement';
 import SupplyChain from './pages/SupplyChain';
-import Scope3Calculator from './pages/Scope3Calculator';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -58,7 +57,6 @@ const AuthenticatedApp = () => {
         <Route path="/reports" element={<Reports />} />
         <Route path="/data" element={<DataManagement />} />
         <Route path="/supply-chain" element={<SupplyChain />} />
-        <Route path="/scope3-calculator" element={<Scope3Calculator />} />
         <Route path="/offsets" element={<Dashboard />} />
         <Route path="/marketplace" element={<Dashboard />} />
         <Route path="/targets" element={<Dashboard />} />
