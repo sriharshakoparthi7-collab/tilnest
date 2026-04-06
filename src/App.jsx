@@ -5,7 +5,18 @@ import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
-// Add page imports here
+import Layout from './components/Layout';
+import Dashboard from './pages/Dashboard';
+import Organization from './pages/Organization';
+import Locations from './pages/Locations';
+import Scope1Energy from './pages/Scope1Energy';
+import Scope1Vehicles from './pages/Scope1Vehicles';
+import Scope1Refrigerants from './pages/Scope1Refrigerants';
+import Scope2Electricity from './pages/Scope2Electricity';
+import Scope2Heat from './pages/Scope2Heat';
+import Scope3Categories from './pages/Scope3Categories';
+import Reports from './pages/Reports';
+import DataManagement from './pages/DataManagement';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -33,11 +44,23 @@ const AuthenticatedApp = () => {
   // Render the main app
   return (
     <Routes>
-      {/* Add your page Route elements here */}
-      <Route path="*" element={<PageNotFound />} />
+      <Route element={<Layout />}>
+        <Route path="/" element={<Dashboard />} />
+        <Route path="/organization" element={<Organization />} />
+        <Route path="/locations" element={<Locations />} />
+        <Route path="/scope1/energy" element={<Scope1Energy />} />
+        <Route path="/scope1/vehicles" element={<Scope1Vehicles />} />
+        <Route path="/scope1/refrigerants" element={<Scope1Refrigerants />} />
+        <Route path="/scope2/electricity" element={<Scope2Electricity />} />
+        <Route path="/scope2/heat" element={<Scope2Heat />} />
+        <Route path="/scope3" element={<Scope3Categories />} />
+        <Route path="/reports" element={<Reports />} />
+        <Route path="/data" element={<DataManagement />} />
+        <Route path="*" element={<PageNotFound />} />
+      </Route>
     </Routes>
   );
-};
+  };
 
 
 function App() {

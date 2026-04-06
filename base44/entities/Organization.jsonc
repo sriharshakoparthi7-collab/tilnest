@@ -1,0 +1,33 @@
+{
+  "name": "Organization",
+  "type": "object",
+  "properties": {
+    "company_name": {
+      "type": "string",
+      "title": "Company Name"
+    },
+    "industry": {
+      "type": "string",
+      "title": "Industry"
+    },
+    "country": {
+      "type": "string",
+      "title": "Country"
+    },
+    "reporting_year": {
+      "type": "number",
+      "title": "Reporting Year"
+    },
+    "employee_count": {
+      "type": "number",
+      "title": "Employee Count"
+    },
+    "revenue": {
+      "type": "number",
+      "title": "Annual Revenue (USD)"
+    }
+  },
+  "required": [
+    "company_name"
+  ]
+}

@@ -1,0 +1,138 @@
+{
+  "name": "EmissionEntry",
+  "type": "object",
+  "properties": {
+    "scope": {
+      "type": "string",
+      "title": "Scope",
+      "enum": [
+        "Scope 1",
+        "Scope 2",
+        "Scope 3"
+      ]
+    },
+    "category": {
+      "type": "string",
+      "title": "Category"
+    },
+    "sub_category": {
+      "type": "string",
+      "title": "Sub Category"
+    },
+    "location_id": {
+      "type": "string",
+      "title": "Location"
+    },
+    "location_name": {
+      "type": "string",
+      "title": "Location Name"
+    },
+    "source_name": {
+      "type": "string",
+      "title": "Source / Asset Name"
+    },
+    "supplier": {
+      "type": "string",
+      "title": "Supplier"
+    },
+    "start_date": {
+      "type": "string",
+      "format": "date",
+      "title": "Start Date"
+    },
+    "end_date": {
+      "type": "string",
+      "format": "date",
+      "title": "End Date"
+    },
+    "reporting_year": {
+      "type": "number",
+      "title": "Reporting Year"
+    },
+    "quantity": {
+      "type": "number",
+      "title": "Quantity"
+    },
+    "unit": {
+      "type": "string",
+      "title": "Unit"
+    },
+    "amount_paid": {
+      "type": "number",
+      "title": "Amount Paid"
+    },
+    "currency": {
+      "type": "string",
+      "title": "Currency",
+      "default": "USD"
+    },
+    "green_power_pct": {
+      "type": "number",
+      "title": "Green Power %"
+    },
+    "emission_factor": {
+      "type": "number",
+      "title": "Emission Factor (kgCO2e/unit)"
+    },
+    "tco2e": {
+      "type": "number",
+      "title": "Emissions (tCO2e)"
+    },
+    "calculation_method": {
+      "type": "string",
+      "title": "Calculation Method",
+      "enum": [
+        "Actual",
+        "Estimate",
+        "Spend-Based",
+        "Distance-Based"
+      ]
+    },
+    "notes": {
+      "type": "string",
+      "title": "Notes"
+    },
+    "status": {
+      "type": "string",
+      "title": "Status",
+      "enum": [
+        "Draft",
+        "In Review",
+        "Approved"
+      ],
+      "default": "Draft"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "title": "Tags"
+    },
+    "vehicle_type": {
+      "type": "string",
+      "title": "Vehicle Type"
+    },
+    "fuel_type": {
+      "type": "string",
+      "title": "Fuel Type"
+    },
+    "equipment_type": {
+      "type": "string",
+      "title": "Equipment Type"
+    },
+    "s3_category_number": {
+      "type": "number",
+      "title": "Scope 3 Category Number"
+    },
+    "upload_file_url": {
+      "type": "string",
+      "title": "Uploaded File URL"
+    }
+  },
+  "required": [
+    "scope",
+    "category",
+    "reporting_year"
+  ]
+}
