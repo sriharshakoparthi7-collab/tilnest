@@ -9,14 +9,11 @@ import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
 import Organization from './pages/Organization';
 import Locations from './pages/Locations';
-import Scope1Energy from './pages/Scope1Energy';
-import Scope1Vehicles from './pages/Scope1Vehicles';
-import Scope1Refrigerants from './pages/Scope1Refrigerants';
-import Scope2Electricity from './pages/Scope2Electricity';
-import Scope2Heat from './pages/Scope2Heat';
+import EnvironmentPage from './pages/EnvironmentPage';
 import Scope3Categories from './pages/Scope3Categories';
 import Reports from './pages/Reports';
 import DataManagement from './pages/DataManagement';
+import SupplyChain from './pages/SupplyChain';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -48,17 +45,25 @@ const AuthenticatedApp = () => {
         <Route path="/" element={<Dashboard />} />
         <Route path="/organization" element={<Organization />} />
         <Route path="/locations" element={<Locations />} />
-        <Route path="/scope1/energy" element={<Scope1Energy />} />
-        <Route path="/scope1/vehicles" element={<Scope1Vehicles />} />
-        <Route path="/scope1/refrigerants" element={<Scope1Refrigerants />} />
-        <Route path="/scope2/electricity" element={<Scope2Electricity />} />
-        <Route path="/scope2/heat" element={<Scope2Heat />} />
+        <Route path="/environment/energy" element={<EnvironmentPage />} />
+        <Route path="/environment/travel" element={<EnvironmentPage />} />
+        <Route path="/environment/goods" element={<EnvironmentPage />} />
+        <Route path="/environment/waste" element={<EnvironmentPage />} />
+        <Route path="/environment/employees" element={<EnvironmentPage />} />
+        <Route path="/environment/refrigerants" element={<EnvironmentPage />} />
+        <Route path="/environment/water" element={<EnvironmentPage />} />
+        <Route path="/environment/other" element={<EnvironmentPage />} />
         <Route path="/scope3" element={<Scope3Categories />} />
         <Route path="/reports" element={<Reports />} />
         <Route path="/data" element={<DataManagement />} />
-        <Route path="*" element={<PageNotFound />} />
+        <Route path="/supply-chain" element={<SupplyChain />} />
+        <Route path="/offsets" element={<Dashboard />} />
+        <Route path="/marketplace" element={<Dashboard />} />
+        <Route path="/targets" element={<Dashboard />} />
+        <Route path="/learn" element={<Dashboard />} />
+        <Route path="*" element={<Dashboard />} />
       </Route>
-    </Routes>
+      </Routes>
   );
   };
 

@@ -1,164 +1,169 @@
 import { Outlet, Link, useLocation } from "react-router-dom";
 import { useState } from "react";
 import {
-  LayoutDashboard, Building2, MapPin, Flame, Zap, Globe, BarChart3,
-  Database, ChevronDown, ChevronRight, Leaf, Menu, X
+  LayoutDashboard, Globe, Zap, Car, ShoppingBag, Trash2, Users, Wind, Droplets,
+  MoreHorizontal, Leaf, BarChart3, Link2, Target, BookOpen, ChevronDown,
+  ChevronRight, Building2, Menu, Package
 } from "lucide-react";
 
-const NAV = [
-  { label: "Dashboard", icon: LayoutDashboard, path: "/" },
-  { label: "Organization", icon: Building2, path: "/organization" },
-  { label: "Locations", icon: MapPin, path: "/locations" },
+const ENV_ITEMS = [
+  { label: "Energy", path: "/environment/energy", icon: Zap },
+  { label: "Travel", path: "/environment/travel", icon: Car },
+  { label: "Goods & Services", path: "/environment/goods", icon: ShoppingBag },
+  { label: "Waste & Reuse", path: "/environment/waste", icon: Trash2 },
+  { label: "Employees", path: "/environment/employees", icon: Users },
+  { label: "Refrigerants", path: "/environment/refrigerants", icon: Wind },
+  { label: "Water", path: "/environment/water", icon: Droplets },
+  { label: "Other", path: "/environment/other", icon: MoreHorizontal },
+];
+
+const NAV_ITEMS = [
+  { label: "Dashboard", icon: LayoutDashboard, path: "/", type: "link" },
   {
-    label: "Scope 1", icon: Flame, color: "text-emerald-400",
-    children: [
-      { label: "Stationary Energy", path: "/scope1/energy" },
-      { label: "Vehicles", path: "/scope1/vehicles" },
-      { label: "Refrigerants", path: "/scope1/refrigerants" },
-    ]
+    label: "Environment", icon: Globe, type: "group", children: ENV_ITEMS,
+    matchPaths: ["/environment"]
   },
-  {
-    label: "Scope 2", icon: Zap, color: "text-amber-400",
-    children: [
-      { label: "Electricity", path: "/scope2/electricity" },
-      { label: "Heat & Steam", path: "/scope2/heat" },
-    ]
-  },
-  {
-    label: "Scope 3", icon: Globe, color: "text-blue-400",
-    children: [
-      { label: "All Categories", path: "/scope3" },
-    ]
-  },
-  { label: "Reports", icon: BarChart3, path: "/reports" },
-  { label: "Data Management", icon: Database, path: "/data" },
+  { label: "Offsets", icon: Leaf, path: "/offsets", type: "link" },
+  { label: "Marketplace", icon: Link2, path: "/marketplace", type: "link" },
+  { label: "Targets", icon: Target, path: "/targets", type: "link" },
+  { label: "Reports", icon: BarChart3, path: "/reports", type: "link" },
+  { label: "Supply chain", icon: Package, path: "/supply-chain", type: "link" },
+  { label: "Learn", icon: BookOpen, path: "/learn", type: "link" },
 ];
 
 export default function Layout() {
   const location = useLocation();
-  const [expanded, setExpanded] = useState({ "Scope 1": true, "Scope 2": false, "Scope 3": false });
+  const [envOpen, setEnvOpen] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const toggle = (label) => setExpanded(prev => ({ ...prev, [label]: !prev[label] }));
   const isActive = (path) => location.pathname === path;
-  const isChildActive = (children) => children?.some(c => location.pathname.startsWith(c.path));
+  const isEnvActive = () => location.pathname.startsWith("/environment");
 
   const SidebarContent = () => (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full bg-white border-r border-slate-200">
       {/* Logo */}
-      <div className="px-5 py-5 border-b border-sidebar-border">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+      <div className="px-4 py-4 border-b border-slate-100">
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-lg bg-emerald-600 flex items-center justify-center">
             <Leaf className="w-4 h-4 text-white" />
           </div>
-          <div>
-            <div className="text-white font-semibold text-base tracking-tight">tilnest</div>
-            <div className="text-sidebar-foreground/50 text-xs">GHG Inventory</div>
-          </div>
+          <span className="font-bold text-slate-800 text-base tracking-tight">tilnest</span>
         </div>
       </div>
 
-      {/* Reporting Year */}
-      <div className="px-4 py-3 border-b border-sidebar-border">
-        <div className="flex items-center justify-between bg-sidebar-accent rounded-lg px-3 py-2">
-          <span className="text-sidebar-foreground/70 text-xs">Reporting Year</span>
-          <span className="text-white text-xs font-semibold">2024</span>
+      {/* Org switcher */}
+      <div className="px-3 py-3 border-b border-slate-100">
+        <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-slate-50 cursor-pointer">
+          <div className="w-7 h-7 rounded-full bg-teal-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+            TC
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="text-sm font-semibold text-slate-800 truncate">My Company</div>
+            <div className="text-xs text-slate-500">All locations</div>
+          </div>
         </div>
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 px-3 py-3 overflow-y-auto space-y-0.5">
-        {NAV.map((item) => {
+      <nav className="flex-1 px-2 py-3 overflow-y-auto space-y-0.5">
+        {NAV_ITEMS.map((item) => {
           const Icon = item.icon;
-          if (item.children) {
-            const open = expanded[item.label];
-            const active = isChildActive(item.children);
+
+          if (item.type === "group") {
+            const envActive = isEnvActive();
             return (
               <div key={item.label}>
                 <button
-                  onClick={() => toggle(item.label)}
-                  className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-all ${active ? "bg-sidebar-accent text-white" : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-white"}`}
+                  onClick={() => setEnvOpen(o => !o)}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all ${envActive ? "text-slate-900 bg-slate-100 font-medium" : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"}`}
                 >
-                  <div className="flex items-center gap-2.5">
-                    <Icon className={`w-4 h-4 ${item.color || "text-sidebar-foreground/70"}`} />
-                    <span className="font-medium">{item.label}</span>
-                  </div>
-                  {open ? <ChevronDown className="w-3.5 h-3.5 opacity-60" /> : <ChevronRight className="w-3.5 h-3.5 opacity-60" />}
+                  <Icon className="w-4 h-4 flex-shrink-0" />
+                  <span className="flex-1 text-left">{item.label}</span>
+                  {envOpen ? <ChevronDown className="w-3.5 h-3.5 opacity-50" /> : <ChevronRight className="w-3.5 h-3.5 opacity-50" />}
                 </button>
-                {open && (
-                  <div className="ml-4 mt-0.5 space-y-0.5 border-l border-sidebar-border pl-3">
-                    {item.children.map(child => (
-                      <Link
-                        key={child.path}
-                        to={child.path}
-                        onClick={() => setMobileOpen(false)}
-                        className={`block px-3 py-1.5 rounded-lg text-sm transition-all ${isActive(child.path) ? "bg-primary/20 text-primary-foreground font-medium text-emerald-300" : "text-sidebar-foreground/70 hover:text-white hover:bg-sidebar-accent/50"}`}
-                      >
-                        {child.label}
-                      </Link>
-                    ))}
+                {envOpen && (
+                  <div className="ml-3 mt-0.5 pl-3 border-l border-slate-200 space-y-0.5">
+                    {ENV_ITEMS.map(child => {
+                      const CIcon = child.icon;
+                      const active = isActive(child.path);
+                      return (
+                        <Link
+                          key={child.path}
+                          to={child.path}
+                          onClick={() => setMobileOpen(false)}
+                          className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-sm transition-all ${active ? "text-emerald-700 bg-emerald-50 font-medium border-l-2 border-emerald-500 -ml-px pl-[11px]" : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"}`}
+                        >
+                          <CIcon className="w-3.5 h-3.5 flex-shrink-0" />
+                          <span>{child.label}</span>
+                        </Link>
+                      );
+                    })}
                   </div>
                 )}
               </div>
             );
           }
+
+          const active = isActive(item.path);
           return (
             <Link
               key={item.path}
               to={item.path}
               onClick={() => setMobileOpen(false)}
-              className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all ${isActive(item.path) ? "bg-sidebar-accent text-white font-medium" : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-white"}`}
+              className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all ${active ? "text-slate-900 bg-slate-100 font-medium" : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"}`}
             >
-              <Icon className={`w-4 h-4 ${item.color || "text-sidebar-foreground/70"}`} />
+              <Icon className="w-4 h-4 flex-shrink-0" />
               <span>{item.label}</span>
             </Link>
           );
         })}
       </nav>
 
-      {/* Footer */}
-      <div className="px-4 py-4 border-t border-sidebar-border">
-        <div className="bg-emerald-900/30 rounded-lg p-3">
-          <div className="text-xs text-emerald-400 font-medium mb-1">Data completeness</div>
-          <div className="w-full bg-sidebar-border rounded-full h-1.5 mb-1">
-            <div className="bg-emerald-400 h-1.5 rounded-full" style={{ width: "42%" }} />
-          </div>
-          <div className="text-xs text-sidebar-foreground/50">42% of inventory measured</div>
-        </div>
+      {/* Bottom settings */}
+      <div className="border-t border-slate-100 px-2 py-3 space-y-0.5">
+        <Link to="/organization" className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-all">
+          <Building2 className="w-4 h-4" />
+          <span>Company settings</span>
+        </Link>
+        <Link to="/data" className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-all">
+          <LayoutDashboard className="w-4 h-4" />
+          <span>Data</span>
+        </Link>
       </div>
     </div>
   );
 
   return (
-    <div className="flex h-screen bg-background overflow-hidden">
+    <div className="flex h-screen bg-slate-50 overflow-hidden">
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex flex-col w-60 bg-sidebar flex-shrink-0">
+      <aside className="hidden md:flex flex-col w-56 flex-shrink-0">
         <SidebarContent />
       </aside>
 
       {/* Mobile Sidebar */}
       {mobileOpen && (
         <div className="fixed inset-0 z-50 flex md:hidden">
-          <div className="fixed inset-0 bg-black/50" onClick={() => setMobileOpen(false)} />
-          <aside className="relative w-60 bg-sidebar h-full shadow-xl">
+          <div className="fixed inset-0 bg-black/40" onClick={() => setMobileOpen(false)} />
+          <aside className="relative w-56 h-full shadow-xl">
             <SidebarContent />
           </aside>
         </div>
       )}
 
-      {/* Main Content */}
+      {/* Main */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Top Bar */}
-        <header className="h-14 bg-card border-b border-border flex items-center justify-between px-4 md:px-6 flex-shrink-0">
-          <button className="md:hidden p-1.5 rounded-lg hover:bg-muted" onClick={() => setMobileOpen(true)}>
-            <Menu className="w-5 h-5" />
+        {/* Top bar */}
+        <header className="h-12 bg-white border-b border-slate-200 flex items-center justify-between px-5 flex-shrink-0">
+          <button className="md:hidden p-1.5 rounded-lg hover:bg-slate-100" onClick={() => setMobileOpen(true)}>
+            <Menu className="w-4 h-4" />
           </button>
           <div className="flex items-center gap-3 ml-auto">
-            <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-1.5">
-              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-sm font-semibold text-emerald-700">0.00 tCO₂e</span>
+            <div className="text-sm text-slate-500 hidden sm:block">FY2024</div>
+            <div className="flex items-center gap-1.5 bg-emerald-50 border border-emerald-200 rounded-full px-3 py-1">
+              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+              <span className="text-xs font-semibold text-emerald-700">0.00 tCO₂e</span>
             </div>
-            <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
+            <div className="w-7 h-7 rounded-full bg-teal-600 flex items-center justify-center">
               <span className="text-white text-xs font-bold">T</span>
             </div>
           </div>
