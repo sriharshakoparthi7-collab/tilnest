@@ -1,0 +1,138 @@
+{
+  "name": "PurchaseEntry",
+  "type": "object",
+  "properties": {
+    "description": {
+      "type": "string",
+      "title": "Item Description"
+    },
+    "ui_category": {
+      "type": "string",
+      "title": "UI Category",
+      "enum": [
+        "Energy",
+        "Travel",
+        "Goods & Services",
+        "Waste & Reuse",
+        "Employees",
+        "Refrigerants",
+        "Water"
+      ]
+    },
+    "quantity": {
+      "type": "number",
+      "title": "Quantity"
+    },
+    "unit_mass_kg": {
+      "type": "number",
+      "title": "Unit Mass (kg)"
+    },
+    "supplier_name": {
+      "type": "string",
+      "title": "Supplier Name"
+    },
+    "spend_usd": {
+      "type": "number",
+      "title": "Spend (USD)"
+    },
+    "sector_code": {
+      "type": "string",
+      "title": "ANZSIC / Sector Code"
+    },
+    "data_tier": {
+      "type": "string",
+      "title": "Data Tier",
+      "enum": [
+        "Tier 1 - EPD/LCA",
+        "Tier 2 - Scope1+2 + BOM",
+        "Tier 3 - BOM Only",
+        "Tier 4 - Spend-based"
+      ]
+    },
+    "supplier_tco2e": {
+      "type": "number",
+      "title": "Supplier-Provided tCO2e (Tier 1)"
+    },
+    "supplier_scope1_2_tco2e": {
+      "type": "number",
+      "title": "Supplier S1+S2 tCO2e (Tier 2)"
+    },
+    "supplier_total_output_kg": {
+      "type": "number",
+      "title": "Supplier Total Factory Output (kg)"
+    },
+    "supplier_revenue_usd": {
+      "type": "number",
+      "title": "Supplier Total Revenue (USD)"
+    },
+    "bom_materials": {
+      "type": "array",
+      "title": "Bill of Materials",
+      "items": {
+        "type": "object",
+        "properties": {
+          "material": {
+            "type": "string"
+          },
+          "mass_kg": {
+            "type": "number"
+          },
+          "emission_factor_kgco2e_per_kg": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "delivery_terms": {
+      "type": "string",
+      "title": "Delivery Terms",
+      "enum": [
+        "Supplier Delivered (DDP)",
+        "Ex-Works / Client Pick-up"
+      ]
+    },
+    "transport_distance_km": {
+      "type": "number",
+      "title": "Transport Distance (km)"
+    },
+    "transport_mode": {
+      "type": "string",
+      "title": "Transport Mode",
+      "enum": [
+        "Heavy Truck",
+        "Light Van",
+        "Rail",
+        "Sea Freight",
+        "Air Freight"
+      ]
+    },
+    "is_c2c": {
+      "type": "boolean",
+      "title": "Apply Cradle-to-Cradle Analysis",
+      "default": false
+    },
+    "reporting_year": {
+      "type": "number",
+      "title": "Reporting Year"
+    },
+    "result_json": {
+      "type": "string",
+      "title": "Calculation Result (JSON)"
+    },
+    "status": {
+      "type": "string",
+      "title": "Status",
+      "enum": [
+        "Draft",
+        "Calculated",
+        "Approved"
+      ],
+      "default": "Draft"
+    }
+  },
+  "required": [
+    "description",
+    "ui_category",
+    "data_tier"
+  ]
+}

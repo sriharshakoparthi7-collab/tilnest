@@ -3,7 +3,7 @@ import { useState } from "react";
 import {
   LayoutDashboard, Globe, Zap, Car, ShoppingBag, Trash2, Users, Wind, Droplets,
   MoreHorizontal, Leaf, BarChart3, Link2, Target, BookOpen, ChevronDown,
-  ChevronRight, Building2, Menu, Package
+  ChevronRight, Building2, Menu, Package, Calculator
 } from "lucide-react";
 
 const ENV_ITEMS = [
@@ -28,6 +28,7 @@ const NAV_ITEMS = [
   { label: "Targets", icon: Target, path: "/targets", type: "link" },
   { label: "Reports", icon: BarChart3, path: "/reports", type: "link" },
   { label: "Supply chain", icon: Package, path: "/supply-chain", type: "link" },
+  { label: "GHG Calculator", icon: Calculator, path: "/calculator", type: "link" },
   { label: "Learn", icon: BookOpen, path: "/learn", type: "link" },
 ];
 
