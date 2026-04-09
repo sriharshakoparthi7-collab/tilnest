@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import BulkUploadModal from "../components/BulkUploadModal";
 
-const TYPES = ["Office", "Warehouse", "Factory", "Data Center", "Retail", "Other"];
+const TYPES = ["Office", "Warehouse", "Factory/Manufacturing", "Data Center", "Retail Store", "Distribution Center", "Other"];
 
 const TYPE_COLORS = {
   Office: "bg-blue-50 text-blue-700",
@@ -34,7 +34,7 @@ export default function Locations() {
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("All");
   const [selected, setSelected] = useState(new Set());
-  const [form, setForm] = useState({ name: "", address: "", city: "", country: "", type: "Office", floor_area_m2: "" });
+  const [form, setForm] = useState({ name: "", type: "Office", country: "", state: "", city: "", address: "", zip: "", floor_area_m2: "", floor_area_unit: "m²", status: "Active" });
 
   const load = async () => {
     const [locs, ems] = await Promise.all([
@@ -48,11 +48,11 @@ export default function Locations() {
 
   useEffect(() => { load(); }, []);
 
-  const openAdd = () => { setEditing(null); setForm({ name: "", address: "", city: "", country: "", type: "Office", floor_area_m2: "" }); setShowForm(true); };
-  const openEdit = (loc) => { setEditing(loc); setForm({ ...loc, floor_area_m2: loc.floor_area_m2 || "" }); setShowForm(true); };
+  const openAdd = () => { setEditing(null); setForm({ name: "", type: "Office", country: "", state: "", city: "", address: "", zip: "", floor_area_m2: "", floor_area_unit: "m²", status: "Active" }); setShowForm(true); };
+  const openEdit = (loc) => { setEditing(loc); setForm({ name: "", type: "Office", country: "", state: "", city: "", address: "", zip: "", floor_area_m2: "", floor_area_unit: "m²", status: "Active", ...loc }); setShowForm(true); };
 
   const save = async () => {
-    const data = { ...form, floor_area_m2: parseFloat(form.floor_area_m2) || undefined };
+    const data = { ...form, floor_area_m2: parseFloat(form.floor_area_m2) || undefined, floor_area_unit: form.floor_area_unit || "m²" };
     if (editing) await base44.entities.Location.update(editing.id, data);
     else await base44.entities.Location.create(data);
     setShowForm(false);
@@ -236,32 +236,62 @@ export default function Locations() {
                 <Label className="text-sm font-medium">Location Name <span className="text-red-500">*</span></Label>
                 <Input className="mt-1" placeholder="e.g. Sydney HQ" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label className="text-sm font-medium">Type</Label>
-                  <Select value={form.type} onValueChange={v => setForm(f => ({ ...f, type: v }))}>
-                    <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                    <SelectContent>{TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label className="text-sm font-medium">Floor Area (m²)</Label>
-                  <Input className="mt-1" type="number" placeholder="0" value={form.floor_area_m2} onChange={e => setForm(f => ({ ...f, floor_area_m2: e.target.value }))} />
-                </div>
-              </div>
+
+              <div className="text-xs font-semibold text-slate-400 uppercase tracking-wide pt-1">Type & Classification</div>
               <div>
-                <Label className="text-sm font-medium">Address</Label>
-                <Input className="mt-1" placeholder="Street address" value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} />
+                <Label className="text-sm font-medium">Location Type <span className="text-red-500">*</span></Label>
+                <Select value={form.type} onValueChange={v => setForm(f => ({ ...f, type: v }))}>
+                  <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                  <SelectContent>{TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+
+              <div className="text-xs font-semibold text-slate-400 uppercase tracking-wide pt-1">Address</div>
+              <div>
+                <Label className="text-sm font-medium">Country <span className="text-red-500">*</span></Label>
+                <Input className="mt-1" placeholder="e.g. Australia" value={form.country} onChange={e => setForm(f => ({ ...f, country: e.target.value }))} />
               </div>
               <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-sm font-medium">State / Province</Label>
+                  <Input className="mt-1" placeholder="e.g. NSW" value={form.state || ""} onChange={e => setForm(f => ({ ...f, state: e.target.value }))} />
+                </div>
                 <div>
                   <Label className="text-sm font-medium">City</Label>
                   <Input className="mt-1" placeholder="City" value={form.city} onChange={e => setForm(f => ({ ...f, city: e.target.value }))} />
                 </div>
-                <div>
-                  <Label className="text-sm font-medium">Country</Label>
-                  <Input className="mt-1" placeholder="Country" value={form.country} onChange={e => setForm(f => ({ ...f, country: e.target.value }))} />
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                <div className="col-span-2">
+                  <Label className="text-sm font-medium">Street Address</Label>
+                  <Input className="mt-1" placeholder="Street address" value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} />
                 </div>
+                <div>
+                  <Label className="text-sm font-medium">Zip / Postcode</Label>
+                  <Input className="mt-1" placeholder="2000" value={form.zip || ""} onChange={e => setForm(f => ({ ...f, zip: e.target.value }))} />
+                </div>
+              </div>
+
+              <div className="text-xs font-semibold text-slate-400 uppercase tracking-wide pt-1">Facility Info</div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-sm font-medium">Gross Floor Area</Label>
+                  <Input className="mt-1" type="number" placeholder="0" value={form.floor_area_m2} onChange={e => setForm(f => ({ ...f, floor_area_m2: e.target.value }))} />
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">Unit</Label>
+                  <Select value={form.floor_area_unit || "m²"} onValueChange={v => setForm(f => ({ ...f, floor_area_unit: v }))}>
+                    <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                    <SelectContent><SelectItem value="m²">m²</SelectItem><SelectItem value="sq ft">sq ft</SelectItem></SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div>
+                <Label className="text-sm font-medium">Status</Label>
+                <Select value={form.status || "Active"} onValueChange={v => setForm(f => ({ ...f, status: v }))}>
+                  <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                  <SelectContent><SelectItem value="Active">Active</SelectItem><SelectItem value="Inactive">Inactive</SelectItem></SelectContent>
+                </Select>
               </div>
             </div>
             <div className="flex justify-end gap-3 p-6 border-t border-slate-100">
