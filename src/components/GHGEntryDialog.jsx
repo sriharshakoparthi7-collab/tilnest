@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { X, Info, ChevronDown, ChevronUp, AlertCircle, CheckCircle2, Leaf } from "lucide-react";
+import { X, Info, ChevronDown, ChevronUp, Leaf } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,37 +20,35 @@ const SECTOR_FACTORS = {
   "Other": 0.35,
 };
 
-const MATERIAL_FACTORS = { // kg CO2e per kg material
+const MATERIAL_FACTORS = {
   "Steel": 1.85, "Aluminum": 8.24, "Copper": 3.80, "Plastic (PET)": 2.73,
   "Plastic (HDPE)": 2.13, "Glass": 0.85, "Cardboard": 0.94, "Wood": 0.46,
   "Concrete": 0.13, "Rubber": 2.85,
 };
 
-// Australian NGA Factors (kg CO2e / kg)
 const AUS_WASTE_FACTORS = {
   "Landfill - General": 1.91, "Landfill - Organic": 2.64, "Recycling - Metal": 0.02,
   "Recycling - Plastic": 0.04, "Recycling - Paper": 0.03, "Recycling - Glass": 0.01,
   "Incineration": 0.56, "Composting": 0.19, "Wastewater Treatment": 0.52,
 };
 
-// Australian recovery rates for C2C avoided emissions
 const AUS_RECOVERY_RATES = {
   "Steel": 0.90, "Aluminum": 0.80, "Plastic (PET)": 0.15, "Cardboard": 0.60, "Glass": 0.30, "General": 0.20
 };
 
-const TRANSPORT_MODE_FACTORS = { // kg CO2e / tonne-km
+const TRANSPORT_MODE_FACTORS = {
   "Road (Truck)": 0.096, "Rail": 0.028, "Sea (Container)": 0.011, "Air": 0.602,
 };
 
 const ENERGY_FACTORS = {
-  "Electricity - Grid (AU)": 0.79,   // kg CO2e / kWh AUS grid
+  "Electricity - Grid (AU)": 0.79,
   "Electricity - Renewable": 0.02,
-  "Natural Gas": 2.04,               // kg CO2e / m³
+  "Natural Gas": 2.04,
   "LPG": 1.51, "Diesel": 2.68, "Petrol": 2.31,
 };
 
 const TRAVEL_FACTORS = {
-  "Domestic Flights": 0.255,   // kg CO2e / km
+  "Domestic Flights": 0.255,
   "International Flights (Economy)": 0.195,
   "International Flights (Business)": 0.429,
   "Car (Petrol)": 0.170, "Car (EV)": 0.064,
@@ -67,7 +65,7 @@ const REFRIGERANT_GWP = {
   "R-407C": 1774, "R-404A": 3922, "R-32": 675, "CO2 (R-744)": 1,
 };
 
-// ─── Tier helper ─────────────────────────────────────────────────────────────
+// ─── Helpers ─────────────────────────────────────────────────────────────────
 function calcTier(tier, form) {
   if (tier === "tier1") return { tco2e: parseFloat(form.primary_tco2e) || 0, score: 10, method: "Tier 1 - Primary LCA/EPD" };
   if (tier === "tier2") {
@@ -79,7 +77,6 @@ function calcTier(tier, form) {
     const tco2e = (parseFloat(form.material_mass_kg) || 0) * factor / 1000;
     return { tco2e, score: 6, method: "Tier 3 - BOM + Industry Averages" };
   }
-  // tier4
   const sf = SECTOR_FACTORS[form.sector] || 0.35;
   const tco2e = (parseFloat(form.spend) || 0) * sf * 1.1 / 1000;
   return { tco2e, score: 2, method: "Tier 4 - Spend-based" };
@@ -95,15 +92,12 @@ function calcWaste(form) {
   const wf = AUS_WASTE_FACTORS[form.waste_type] || 1.91;
   const qty = parseFloat(form.waste_quantity_kg) || 0;
   const emitted = qty * wf / 1000;
-
-  // Avoided emissions C2C
   const mat = form.material_type || "General";
   const rate = AUS_RECOVERY_RATES[mat] || 0.20;
   const avoided = qty * rate * (MATERIAL_FACTORS[mat] || 1.0) / 1000;
   return { emitted, avoided, net: emitted - avoided };
 }
 
-// ─── Quality Badge ────────────────────────────────────────────────────────────
 function QualityBadge({ score }) {
   const cfg = score >= 9 ? { label: "Gold", color: "bg-amber-100 text-amber-700 border-amber-300" }
     : score >= 7 ? { label: "Silver", color: "bg-slate-100 text-slate-600 border-slate-300" }
@@ -117,11 +111,8 @@ export default function GHGEntryDialog({ open, onClose, onSaved, scope, category
   const [locations, setLocations] = useState([]);
   const [saving, setSaving] = useState(false);
   const [showAudit, setShowAudit] = useState(false);
-
-  // Goods sub-category
   const [goodsSubcat, setGoodsSubcat] = useState(defaultValues.sub_category || "purchased_goods");
 
-  // Determine mode
   const isGoods = category?.includes("Goods") || category?.includes("Capital");
   const isWaste = category?.includes("Waste") || category?.includes("End-of-Life");
   const isTravel = category?.includes("Travel") || category?.includes("Business");
@@ -130,28 +121,20 @@ export default function GHGEntryDialog({ open, onClose, onSaved, scope, category
   const isEnergy = category?.includes("Electr") || category?.includes("Heat") || category?.includes("Stationary") || scope === "Scope 2" || scope === "Scope 1 - Energy";
   const isWater = category?.includes("Water");
 
-  // Form state
   const [form, setForm] = useState({
     location_id: "", supplier: "", start_date: "", end_date: "", notes: "",
     source_name: "", status: "Draft",
-    // Goods
     tier: "tier4", spend: "", sector: "Manufacturing - General",
-    primary_tco2e: "", supplier_s1s2: "", alloc_driver: "Economic", alloc_pct: "100",
+    primary_tco2e: "", supplier_s1s2: "", alloc_driver: "Economic Allocation", alloc_pct: "100",
     material_type: "Steel", material_mass_kg: "",
     transport_incoterm: "DDP", transport_mode: "Road (Truck)",
     transport_kg: "", transport_distance: "",
-    // Waste
     waste_quantity_kg: "", waste_type: "Landfill - General",
-    end_of_life_material: "General",
-    // Energy
     energy_type: "Electricity - Grid (AU)", quantity: "", unit: "kWh",
     green_power_pct: "",
-    // Travel
     travel_type: "Domestic Flights", travel_distance_km: "",
     commute_mode: "Car (Petrol)", commute_days: "",
-    // Refrigerant
     refrigerant_gas: "R-410A", refrigerant_kg: "",
-    // Water
     water_m3: "",
     amount_paid: "", currency: "USD",
     ...defaultValues
@@ -162,8 +145,8 @@ export default function GHGEntryDialog({ open, onClose, onSaved, scope, category
   useEffect(() => { base44.entities.Location.list().then(setLocations); }, []);
   useEffect(() => { setForm(f => ({ ...f, ...defaultValues })); }, [open]);
 
-  // ─── Compute preview ───────────────────────────────────────────────────────
-  let result = { tco2e: 0, score: 5, method: "Activity-based", audit: [], categorySplit: {} };
+  // ─── Compute preview ────────────────────────────────────────────────────────
+  let result = { tco2e: 0, score: 5, method: "Activity-based", audit: [], categorySplit: {}, avoided: 0, allocationDriver: "" };
 
   if (isGoods) {
     const tier = calcTier(form.tier, form);
@@ -192,7 +175,7 @@ export default function GHGEntryDialog({ open, onClose, onSaved, scope, category
   } else if (isCommute) {
     const cf = COMMUTE_FACTORS[form.commute_mode] || 0.17;
     const days = parseFloat(form.commute_days) || 0;
-    result.tco2e = days * 2 * 20 * cf / 1000; // assume 20km avg commute round trip
+    result.tco2e = days * 2 * 20 * cf / 1000;
     result.score = 5;
     result.method = "Survey-based · DEFRA";
     result.categorySplit = { "Cat 7 (Employee Commuting)": result.tco2e.toFixed(4) };
@@ -306,8 +289,7 @@ export default function GHGEntryDialog({ open, onClose, onSaved, scope, category
           {/* ── GOODS & SERVICES ── */}
           {isGoods && (
             <div className="space-y-4">
-
-              {/* Smart Sub-category Selector */}
+              {/* Smart Sub-category */}
               <div className="border border-slate-200 rounded-xl overflow-hidden">
                 <div className="bg-slate-50 px-4 py-2.5 text-xs font-semibold text-slate-600 border-b border-slate-200">What type of goods?</div>
                 <div className="p-3 space-y-2">
@@ -315,9 +297,7 @@ export default function GHGEntryDialog({ open, onClose, onSaved, scope, category
                     { key: "capital_goods", label: "Capital Goods", sub: "Long-term assets: machinery, IT equipment, vehicles, facilities" },
                     { key: "purchased_goods", label: "Purchased Goods & Services", sub: "Consumables, supplies, professional services" },
                   ].map(opt => (
-                    <label key={opt.key} className={`flex items-start gap-2.5 p-2.5 rounded-lg cursor-pointer transition-all border ${
-                      goodsSubcat === opt.key ? "bg-blue-50 border-blue-300" : "border-transparent hover:bg-slate-50"
-                    }`}>
+                    <label key={opt.key} className={`flex items-start gap-2.5 p-2.5 rounded-lg cursor-pointer transition-all border ${goodsSubcat === opt.key ? "bg-blue-50 border-blue-300" : "border-transparent hover:bg-slate-50"}`}>
                       <input type="radio" name="goodsSubcat" checked={goodsSubcat === opt.key} onChange={() => setGoodsSubcat(opt.key)} className="mt-0.5 accent-blue-600" />
                       <div>
                         <div className="text-sm font-medium text-slate-800">{opt.label}</div>
@@ -381,11 +361,133 @@ export default function GHGEntryDialog({ open, onClose, onSaved, scope, category
                 </div>
               )}
 
+              {/* Data Quality Tier */}
               <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
                 <div className="text-xs font-semibold text-blue-800 mb-3 flex items-center gap-1.5">
                   <Info className="w-3.5 h-3.5" /> Data Quality Tier — select best available
                 </div>
                 <div className="space-y-2">
+                  {[
+                    { key: "tier1", label: "Tier 1 · Supplier LCA / EPD", sub: "Gold standard — use verified tCO₂e", score: 10 },
+                    { key: "tier2", label: "Tier 2 · Supplier Scope 1&2 + BOM", sub: "Hybrid with allocation", score: 8 },
+                    { key: "tier3", label: "Tier 3 · BOM only (no GHG data)", sub: "Material mass × industry factors", score: 6 },
+                    { key: "tier4", label: "Tier 4 · Spend only", sub: "Spend × sector factor × 1.1 safety", score: 2 },
+                  ].map(t => (
+                    <label key={t.key} className={`flex items-start gap-2.5 p-2.5 rounded-lg cursor-pointer transition-all ${form.tier === t.key ? "bg-white border border-blue-300 shadow-sm" : "hover:bg-blue-100/50"}`}>
+                      <input type="radio" name="tier" className="mt-0.5 accent-blue-600" checked={form.tier === t.key} onChange={() => set("tier", t.key)} />
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium text-slate-800">{t.label}</span>
+                          <QualityBadge score={t.score} />
+                        </div>
+                        <span className="text-xs text-slate-500">{t.sub}</span>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {form.tier === "tier1" && (
+                <div>
+                  <Label className="text-sm font-medium">Verified tCO₂e (from LCA/EPD)</Label>
+                  <Input type="number" className="mt-1" placeholder="0.000" value={form.primary_tco2e} onChange={e => set("primary_tco2e", e.target.value)} />
+                </div>
+              )}
+
+              {form.tier === "tier2" && (
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-sm font-medium">Supplier Scope 1+2 (kg CO₂e)</Label>
+                      <Input type="number" className="mt-1" placeholder="0" value={form.supplier_s1s2} onChange={e => set("supplier_s1s2", e.target.value)} />
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium">Product allocation %</Label>
+                      <Input type="number" className="mt-1" placeholder="100" min="0" max="100" value={form.alloc_pct} onChange={e => set("alloc_pct", e.target.value)} />
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium">Allocation Driver</Label>
+                    <Select value={form.alloc_driver} onValueChange={v => set("alloc_driver", v)}>
+                      <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {["Machine Hours", "Mass-Based", "Economic Allocation", "Sector Medians (Fallback)"].map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              )}
+
+              {form.tier === "tier3" && (
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-sm font-medium">Primary Material</Label>
+                    <Select value={form.material_type} onValueChange={v => set("material_type", v)}>
+                      <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                      <SelectContent>{Object.keys(MATERIAL_FACTORS).map(m => <SelectItem key={m} value={m}>{m} ({MATERIAL_FACTORS[m]} kg/kg)</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium">Mass (kg)</Label>
+                    <Input type="number" className="mt-1" placeholder="0" value={form.material_mass_kg} onChange={e => set("material_mass_kg", e.target.value)} />
+                  </div>
+                </div>
+              )}
+
+              {form.tier === "tier4" && (
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-sm font-medium">Spend (USD)</Label>
+                    <Input type="number" className="mt-1" placeholder="0.00" value={form.spend} onChange={e => set("spend", e.target.value)} />
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium">Sector</Label>
+                    <Select value={form.sector} onValueChange={v => set("sector", v)}>
+                      <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                      <SelectContent>{Object.keys(SECTOR_FACTORS).map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              )}
+
+              {/* Upstream Transport (Cat 4) */}
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
+                <div className="text-xs font-semibold text-slate-700">Scope 3 Cat 4 — Upstream Transport</div>
+                <div>
+                  <Label className="text-sm font-medium">Delivery terms (Incoterm)</Label>
+                  <Select value={form.transport_incoterm} onValueChange={v => set("transport_incoterm", v)}>
+                    <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="DDP">DDP — Supplier delivers (bundled)</SelectItem>
+                      <SelectItem value="EXW">EXW / Ex-Works — We collect (Cat 4)</SelectItem>
+                      <SelectItem value="FOB">FOB — Split at port</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                {form.transport_incoterm !== "DDP" && (
+                  <div className="grid grid-cols-3 gap-2">
+                    <div>
+                      <Label className="text-xs">Weight (kg)</Label>
+                      <Input type="number" className="mt-1 h-8 text-xs" placeholder="0" value={form.transport_kg} onChange={e => set("transport_kg", e.target.value)} />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Distance (km)</Label>
+                      <Input type="number" className="mt-1 h-8 text-xs" placeholder="0" value={form.transport_distance} onChange={e => set("transport_distance", e.target.value)} />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Mode</Label>
+                      <Select value={form.transport_mode} onValueChange={v => set("transport_mode", v)}>
+                        <SelectTrigger className="mt-1 h-8 text-xs"><SelectValue /></SelectTrigger>
+                        <SelectContent>{Object.keys(TRANSPORT_MODE_FACTORS).map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* ── WASTE & REUSE (C2C) ── */}
           {isWaste && (
             <div className="space-y-4">
               <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
@@ -571,7 +673,6 @@ export default function GHGEntryDialog({ open, onClose, onSaved, scope, category
                 </div>
               )}
 
-              {/* Audit trail toggle */}
               <button onClick={() => setShowAudit(a => !a)} className="flex items-center gap-1 text-xs text-emerald-600 hover:underline mt-1">
                 {showAudit ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
                 {showAudit ? "Hide" : "Show"} audit trail
