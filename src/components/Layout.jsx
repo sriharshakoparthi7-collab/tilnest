@@ -2,33 +2,34 @@ import { Outlet, Link, useLocation } from "react-router-dom";
 import { useState } from "react";
 import {
   LayoutDashboard, Globe, Zap, Car, ShoppingBag, Trash2, Users, Wind, Droplets,
-  MoreHorizontal, Leaf, BarChart3, Link2, Target, BookOpen, ChevronDown,
-  ChevronRight, Building2, Menu, Package
+  MoreHorizontal, Leaf, BarChart3, Link2, ChevronDown,
+  ChevronRight, Building2, Menu, Package, TrendingUp
 } from "lucide-react";
 
 const ENV_ITEMS = [
   { label: "Energy", path: "/environment/energy", icon: Zap },
-  { label: "Travel", path: "/environment/travel", icon: Car },
+  { label: "Business Travel", path: "/environment/travel", icon: Car },
   { label: "Goods & Services", path: "/environment/goods", icon: ShoppingBag },
   { label: "Waste & Reuse", path: "/environment/waste", icon: Trash2 },
-  { label: "Employees", path: "/environment/employees", icon: Users },
+  { label: "Employee Commuting", path: "/environment/employees", icon: Users },
   { label: "Refrigerants", path: "/environment/refrigerants", icon: Wind },
   { label: "Water", path: "/environment/water", icon: Droplets },
+  { label: "Transportation & Distribution", path: "/environment/transportation", icon: MoreHorizontal },
+  { label: "Leased Assets", path: "/environment/leased-assets", icon: Building2 },
+  { label: "Sold Products", path: "/environment/sold-products", icon: Package },
+  { label: "Franchises", path: "/environment/franchises", icon: Link2 },
+  { label: "Investments", path: "/environment/investments", icon: TrendingUp },
   { label: "Other", path: "/environment/other", icon: MoreHorizontal },
 ];
 
 const NAV_ITEMS = [
   { label: "Dashboard", icon: LayoutDashboard, path: "/", type: "link" },
   {
-    label: "Environment", icon: Globe, type: "group", children: ENV_ITEMS,
+    label: "Emissions", icon: Globe, type: "group", children: ENV_ITEMS,
     matchPaths: ["/environment"]
   },
-  { label: "Offsets", icon: Leaf, path: "/offsets", type: "link" },
-  { label: "Marketplace", icon: Link2, path: "/marketplace", type: "link" },
-  { label: "Targets", icon: Target, path: "/targets", type: "link" },
   { label: "Reports", icon: BarChart3, path: "/reports", type: "link" },
   { label: "Supply chain", icon: Package, path: "/supply-chain", type: "link" },
-  { label: "Learn", icon: BookOpen, path: "/learn", type: "link" },
 ];
 
 export default function Layout() {

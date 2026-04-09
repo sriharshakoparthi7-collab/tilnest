@@ -52,15 +52,16 @@ const AuthenticatedApp = () => {
         <Route path="/environment/employees" element={<EnvironmentPage />} />
         <Route path="/environment/refrigerants" element={<EnvironmentPage />} />
         <Route path="/environment/water" element={<EnvironmentPage />} />
+        <Route path="/environment/transportation" element={<EnvironmentPage />} />
+        <Route path="/environment/leased-assets" element={<EnvironmentPage />} />
+        <Route path="/environment/sold-products" element={<EnvironmentPage />} />
+        <Route path="/environment/franchises" element={<EnvironmentPage />} />
+        <Route path="/environment/investments" element={<EnvironmentPage />} />
         <Route path="/environment/other" element={<EnvironmentPage />} />
         <Route path="/scope3" element={<Scope3Categories />} />
         <Route path="/reports" element={<Reports />} />
         <Route path="/data" element={<DataManagement />} />
         <Route path="/supply-chain" element={<SupplyChain />} />
-        <Route path="/offsets" element={<Dashboard />} />
-        <Route path="/marketplace" element={<Dashboard />} />
-        <Route path="/targets" element={<Dashboard />} />
-        <Route path="/learn" element={<Dashboard />} />
         <Route path="*" element={<Dashboard />} />
       </Route>
       </Routes>
