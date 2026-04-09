@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import GHGEntryDialog from "../components/GHGEntryDialog";
+import BulkUploadModal from "../components/BulkUploadModal";
 import EmissionsTable from "../components/EmissionsTable";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, LineChart, Line, XAxis, YAxis, CartesianGrid, Legend } from "recharts";
 
@@ -268,7 +269,7 @@ export default function EnvironmentPage() {
   const [locationFilter, setLocationFilter] = useState("All locations");
   const [locations, setLocations] = useState([]);
   const [fy, setFy] = useState("FY2024");
-  const [showImport, setShowImport] = useState(false);
+  const [showBulk, setShowBulk] = useState(false);
 
   const load = () => {
     base44.entities.EmissionEntry.filter({ scope: config.scope, category: config.category })
@@ -317,7 +318,7 @@ export default function EnvironmentPage() {
           <p className="text-sm text-slate-500 mt-0.5">{config.description}</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" className="gap-1.5 text-sm" onClick={() => setShowImport(true)}>
+          <Button variant="outline" size="sm" className="gap-1.5 text-sm" onClick={() => setShowBulk(true)}>
             <Upload className="w-3.5 h-3.5" /> Import
           </Button>
           <Button size="sm" className="gap-1.5" onClick={() => { setEditEntry(null); setShowDialog(true); }}>
@@ -443,26 +444,23 @@ export default function EnvironmentPage() {
         </div>
       )}
 
-      {/* Import Modal */}
-      {showImport && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-sm p-6">
-            <h2 className="font-semibold text-lg mb-1">Import {config.title}</h2>
-            <p className="text-sm text-slate-500 mb-4">Upload a CSV or XLSX file. Max 10MB.</p>
-            <a href="#" className="text-sm text-emerald-600 hover:underline flex items-center gap-1 mb-4">
-              <Download className="w-3.5 h-3.5" /> Download our template to get started
-            </a>
-            <div className="border-2 border-dashed border-slate-200 rounded-xl p-8 text-center bg-slate-50">
-              <Upload className="w-8 h-8 text-slate-400 mx-auto mb-2" />
-              <p className="text-sm text-slate-500">Drag and drop your file here or</p>
-              <button className="text-sm text-emerald-600 hover:underline mt-1">select from your computer ›</button>
-            </div>
-            <div className="flex justify-end gap-2 mt-4">
-              <Button variant="outline" size="sm" onClick={() => setShowImport(false)}>Cancel</Button>
-            </div>
-          </div>
-        </div>
-      )}
+      <BulkUploadModal
+        open={showBulk}
+        onClose={() => setShowBulk(false)}
+        title={config.title}
+        templateHeaders={["source_name", "location_name", "supplier", "start_date", "end_date", "quantity", "unit", "amount_paid", "notes"]}
+        exampleRows={[["Main Meter", "Sydney HQ", "AGL", "2024-01-01", "2024-01-31", "5000", "kWh", "450", ""]]}
+        onUpload={async (rows) => {
+          let created = 0, skipped = 0;
+          for (const row of rows) {
+            if (!row.source_name && !row.quantity) { skipped++; continue; }
+            await base44.entities.EmissionEntry.create({ ...row, scope: config.scope, category: config.category, reporting_year: 2024, quantity: parseFloat(row.quantity) || undefined, amount_paid: parseFloat(row.amount_paid) || undefined });
+            created++;
+          }
+          load();
+          return { created, skipped, errors: [] };
+        }}
+      />
 
       <GHGEntryDialog
         open={showDialog}

@@ -14,6 +14,7 @@ import Scope3Categories from './pages/Scope3Categories';
 import Reports from './pages/Reports';
 import DataManagement from './pages/DataManagement';
 import SupplyChain from './pages/SupplyChain';
+import VehicleRegistry from './pages/VehicleRegistry';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -62,6 +63,7 @@ const AuthenticatedApp = () => {
         <Route path="/reports" element={<Reports />} />
         <Route path="/data" element={<DataManagement />} />
         <Route path="/supply-chain" element={<SupplyChain />} />
+        <Route path="/vehicles" element={<VehicleRegistry />} />
         <Route path="*" element={<Dashboard />} />
       </Route>
       </Routes>

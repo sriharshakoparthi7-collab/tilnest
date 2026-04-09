@@ -1,0 +1,115 @@
+{
+  "name": "Vehicle",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "title": "Vehicle Name / Label"
+    },
+    "vin": {
+      "type": "string",
+      "title": "VIN"
+    },
+    "license_plate": {
+      "type": "string",
+      "title": "License Plate"
+    },
+    "make": {
+      "type": "string",
+      "title": "Make"
+    },
+    "model": {
+      "type": "string",
+      "title": "Model"
+    },
+    "year": {
+      "type": "number",
+      "title": "Year"
+    },
+    "vehicle_type": {
+      "type": "string",
+      "title": "Vehicle Type",
+      "enum": [
+        "Car",
+        "Van",
+        "Truck",
+        "Motorcycle",
+        "Bus",
+        "Heavy Vehicle",
+        "Other"
+      ]
+    },
+    "fuel_type": {
+      "type": "string",
+      "title": "Fuel Type",
+      "enum": [
+        "Petrol",
+        "Diesel",
+        "LPG",
+        "Electric",
+        "Hybrid",
+        "Hydrogen",
+        "Other"
+      ]
+    },
+    "engine_cc": {
+      "type": "number",
+      "title": "Engine Size (cc)"
+    },
+    "location_id": {
+      "type": "string",
+      "title": "Location"
+    },
+    "location_name": {
+      "type": "string",
+      "title": "Location Name"
+    },
+    "department": {
+      "type": "string",
+      "title": "Department"
+    },
+    "odometer_km": {
+      "type": "number",
+      "title": "Current Odometer (km)"
+    },
+    "annual_km": {
+      "type": "number",
+      "title": "Estimated Annual km"
+    },
+    "ownership": {
+      "type": "string",
+      "title": "Ownership",
+      "enum": [
+        "Owned",
+        "Leased",
+        "Hire",
+        "Employee-owned"
+      ]
+    },
+    "status": {
+      "type": "string",
+      "title": "Status",
+      "enum": [
+        "Active",
+        "Inactive",
+        "Sold",
+        "Pending Data"
+      ],
+      "default": "Active"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "title": "Tags"
+    },
+    "notes": {
+      "type": "string",
+      "title": "Notes"
+    }
+  },
+  "required": [
+    "name"
+  ]
+}
