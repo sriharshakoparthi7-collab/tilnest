@@ -3,7 +3,7 @@ import { useState } from "react";
 import {
   LayoutDashboard, Globe, Zap, Car, ShoppingBag, Trash2, Users, Wind, Droplets,
   MoreHorizontal, Leaf, BarChart3, Link2, ChevronDown,
-  ChevronRight, Building2, Menu, Package, TrendingUp, MapPin
+  ChevronRight, Building2, Menu, Package, TrendingUp, MapPin, Wrench
 } from "lucide-react";
 
 const ENV_ITEMS = [
@@ -133,6 +133,10 @@ export default function Layout() {
         <Link to="/vehicles" className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-all">
           <Car className="w-4 h-4" />
           <span>Vehicle Registry</span>
+        </Link>
+        <Link to="/equipment" className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-all">
+          <Wrench className="w-4 h-4" />
+          <span>Equipment Registry</span>
         </Link>
         <Link to="/data" className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-all">
           <LayoutDashboard className="w-4 h-4" />

@@ -1,0 +1,160 @@
+{
+  "name": "Equipment",
+  "type": "object",
+  "properties": {
+    "equipment_name": {
+      "type": "string",
+      "title": "Equipment Name/ID"
+    },
+    "equipment_type_main": {
+      "type": "string",
+      "title": "Equipment Type",
+      "enum": [
+        "Generator",
+        "Compressor",
+        "Forklift",
+        "Pump",
+        "Welder",
+        "Excavator",
+        "Loader",
+        "Grinder",
+        "Air Handler",
+        "Boiler",
+        "Chiller",
+        "Fan",
+        "Motor",
+        "Other"
+      ]
+    },
+    "equipment_subtype": {
+      "type": "string",
+      "title": "Equipment Subtype"
+    },
+    "location_id": {
+      "type": "string",
+      "title": "Location ID"
+    },
+    "location_name": {
+      "type": "string",
+      "title": "Location Name"
+    },
+    "power_source": {
+      "type": "string",
+      "title": "Power/Fuel Source",
+      "enum": [
+        "Petrol",
+        "Diesel",
+        "Natural Gas",
+        "LPG",
+        "CNG",
+        "Electric",
+        "Hybrid",
+        "Other"
+      ]
+    },
+    "activity_type": {
+      "type": "string",
+      "title": "Primary Activity Pattern",
+      "enum": [
+        "Continuous (runs 24/7)",
+        "Intermittent (scheduled use)",
+        "Standby (backup only)",
+        "Seasonal (seasonal operation)"
+      ]
+    },
+    "measurement_type": {
+      "type": "string",
+      "title": "Measurement Type",
+      "enum": [
+        "Operating Hours per period",
+        "Fuel Consumption (L)",
+        "Energy Consumption (kWh)",
+        "Load Factor (% of capacity)"
+      ]
+    },
+    "quantity": {
+      "type": "number",
+      "title": "Quantity"
+    },
+    "unit": {
+      "type": "string",
+      "title": "Unit"
+    },
+    "start_date": {
+      "type": "string",
+      "format": "date",
+      "title": "Period Start Date"
+    },
+    "end_date": {
+      "type": "string",
+      "format": "date",
+      "title": "Period End Date"
+    },
+    "reporting_period": {
+      "type": "string",
+      "title": "Reporting Period",
+      "enum": [
+        "Weekly",
+        "Monthly",
+        "Quarterly",
+        "Annually"
+      ],
+      "default": "Monthly"
+    },
+    "manufacturer": {
+      "type": "string",
+      "title": "Manufacturer"
+    },
+    "model": {
+      "type": "string",
+      "title": "Model"
+    },
+    "serial_number": {
+      "type": "string",
+      "title": "Serial Number"
+    },
+    "equipment_age_years": {
+      "type": "number",
+      "title": "Equipment Age (Years)"
+    },
+    "tco2e": {
+      "type": "number",
+      "title": "Estimated Emissions (tCO\u2082e)"
+    },
+    "calculation_method": {
+      "type": "string",
+      "title": "Calculation Method"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "title": "Tags"
+    },
+    "status": {
+      "type": "string",
+      "title": "Status",
+      "enum": [
+        "Active",
+        "Inactive",
+        "Retired"
+      ],
+      "default": "Active"
+    },
+    "notes": {
+      "type": "string",
+      "title": "Notes"
+    }
+  },
+  "required": [
+    "equipment_name",
+    "equipment_type_main",
+    "location_id",
+    "power_source",
+    "activity_type",
+    "measurement_type",
+    "quantity",
+    "start_date"
+  ]
+}
