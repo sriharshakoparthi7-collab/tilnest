@@ -134,6 +134,10 @@ export default function Layout() {
           <Car className="w-4 h-4" />
           <span>Vehicle Registry</span>
         </Link>
+        <Link to="/equipment" className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-all">
+          <Zap className="w-4 h-4" />
+          <span>Equipment Registry</span>
+        </Link>
         <Link to="/data" className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-all">
           <LayoutDashboard className="w-4 h-4" />
           <span>Data</span>
