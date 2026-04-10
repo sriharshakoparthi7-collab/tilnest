@@ -321,9 +321,32 @@ export default function EnvironmentPage() {
           <Button variant="outline" size="sm" className="gap-1.5 text-sm" onClick={() => setShowBulk(true)}>
             <Upload className="w-3.5 h-3.5" /> Import
           </Button>
-          <Button size="sm" className="gap-1.5" onClick={() => { setEditEntry(null); setShowDialog(true); }}>
-            <Plus className="w-4 h-4" /> Add {config.title}
-          </Button>
+          {categoryKey === "goods" ? (
+            <>
+              <Button size="sm" className="gap-1.5" variant="outline" onClick={() => { setEditEntry({ sub_category: "Capital Goods" }); setShowDialog(true); }}>
+                <Plus className="w-4 h-4" /> Add Capital Goods
+              </Button>
+              <Button size="sm" className="gap-1.5" onClick={() => { setEditEntry({ sub_category: "purchased_goods" }); setShowDialog(true); }}>
+                <Plus className="w-4 h-4" /> Add Purchased Goods
+              </Button>
+            </>
+          ) : categoryKey === "energy" ? (
+            <>
+              <Button size="sm" className="gap-1.5" variant="outline" onClick={() => { setEditEntry({ sub_category: "Purchased Electricity", energy_type: "Electricity - Grid (AU)" }); setShowDialog(true); }}>
+                <Plus className="w-4 h-4" /> Add Electricity
+              </Button>
+              <Button size="sm" className="gap-1.5" variant="outline" onClick={() => { setEditEntry({ sub_category: "Stationary Fuel" }); setShowDialog(true); }}>
+                <Plus className="w-4 h-4" /> Add Stationary Fuel
+              </Button>
+              <Button size="sm" className="gap-1.5" onClick={() => { setEditEntry({ sub_category: "Purchased Heat/Steam/Cooling" }); setShowDialog(true); }}>
+                <Plus className="w-4 h-4" /> Add Heat / Steam
+              </Button>
+            </>
+          ) : (
+            <Button size="sm" className="gap-1.5" onClick={() => { setEditEntry(null); setShowDialog(true); }}>
+              <Plus className="w-4 h-4" /> Add {config.title}
+            </Button>
+          )}
         </div>
       </div>
 

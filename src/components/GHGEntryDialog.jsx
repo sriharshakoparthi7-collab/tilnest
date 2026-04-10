@@ -111,7 +111,10 @@ export default function GHGEntryDialog({ open, onClose, onSaved, scope, category
   const [locations, setLocations] = useState([]);
   const [saving, setSaving] = useState(false);
   const [showAudit, setShowAudit] = useState(false);
-  const [goodsSubcat, setGoodsSubcat] = useState(defaultValues.sub_category || "purchased_goods");
+  const [isProxyBom, setIsProxyBom] = useState(false);
+  const [goodsSubcat, setGoodsSubcat] = useState(
+    defaultValues.sub_category === "Capital Goods" || defaultValues.sub_category === "capital_goods" ? "capital_goods" : "purchased_goods"
+  );
 
   const isGoods = category?.includes("Goods") || category?.includes("Capital");
   const isWaste = category?.includes("Waste") || category?.includes("End-of-Life");
@@ -368,10 +371,10 @@ export default function GHGEntryDialog({ open, onClose, onSaved, scope, category
                 </div>
                 <div className="space-y-2">
                   {[
-                    { key: "tier1", label: "Tier 1 · Supplier LCA / EPD", sub: "Gold standard — use verified tCO₂e", score: 10 },
-                    { key: "tier2", label: "Tier 2 · Supplier Scope 1&2 + BOM", sub: "Hybrid with allocation", score: 8 },
-                    { key: "tier3", label: "Tier 3 · BOM only (no GHG data)", sub: "Material mass × industry factors", score: 6 },
-                    { key: "tier4", label: "Tier 4 · Spend only", sub: "Spend × sector factor × 1.1 safety", score: 2 },
+                    { key: "tier1", label: "Tier 1: Exact Verified Footprint (Gold)", sub: "We have a verified carbon report (PCF or EPD) from the supplier for this exact product.", score: 10 },
+                    { key: "tier2", label: "Tier 2: Supplier Energy + Material Recipe (Silver)", sub: "We know the supplier's actual factory energy bills AND the materials used to make the product.", score: 8 },
+                    { key: "tier3", label: "Tier 3: Industry Averages (Bronze)", sub: "We only know the product type or its material recipe. We will estimate using global database averages.", score: 6 },
+                    { key: "tier4", label: "Tier 4: Spend-Based Estimate (Estimated)", sub: "We only know the financial cost. Estimate emissions based purely on dollars spent.", score: 2 },
                   ].map(t => (
                     <label key={t.key} className={`flex items-start gap-2.5 p-2.5 rounded-lg cursor-pointer transition-all ${form.tier === t.key ? "bg-white border border-blue-300 shadow-sm" : "hover:bg-blue-100/50"}`}>
                       <input type="radio" name="tier" className="mt-0.5 accent-blue-600" checked={form.tier === t.key} onChange={() => set("tier", t.key)} />
@@ -411,7 +414,12 @@ export default function GHGEntryDialog({ open, onClose, onSaved, scope, category
                     <Select value={form.alloc_driver} onValueChange={v => set("alloc_driver", v)}>
                       <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        {["Machine Hours", "Mass-Based", "Economic Allocation", "Sector Medians (Fallback)"].map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                        {[
+                          "By Weight (Mass-Based Allocation)",
+                          "By Production Time (Top-Down Allocation)",
+                          "By Direct Machine Energy (Bottom-Up Calculation)",
+                          "By Revenue (Economic Allocation)"
+                        ].map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
@@ -458,9 +466,9 @@ export default function GHGEntryDialog({ open, onClose, onSaved, scope, category
                   <Select value={form.transport_incoterm} onValueChange={v => set("transport_incoterm", v)}>
                     <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="DDP">DDP — Supplier delivers (bundled)</SelectItem>
-                      <SelectItem value="EXW">EXW / Ex-Works — We collect (Cat 4)</SelectItem>
-                      <SelectItem value="FOB">FOB — Split at port</SelectItem>
+                      <SelectItem value="DDP">DDP (Delivered Duty Paid) — Supplier delivers it to us</SelectItem>
+                      <SelectItem value="EXW">EXW (Ex-Works) — We arrange the collection</SelectItem>
+                      <SelectItem value="FOB">FOB (Free on Board) — Split responsibility at port</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

@@ -24,6 +24,9 @@ const ENV_ITEMS = [
 
 const NAV_ITEMS = [
   { label: "Dashboard", icon: LayoutDashboard, path: "/", type: "link" },
+  { label: "Locations", icon: MapPin, path: "/locations", type: "link" },
+  { label: "Vehicle Registry", icon: Car, path: "/vehicles", type: "link" },
+  { label: "Equipment Registry", icon: Wrench, path: "/equipment", type: "link" },
   {
     label: "Emissions", icon: Globe, type: "group", children: ENV_ITEMS,
     matchPaths: ["/environment"]
@@ -125,18 +128,6 @@ export default function Layout() {
         <Link to="/organization" className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-all">
           <Building2 className="w-4 h-4" />
           <span>Company settings</span>
-        </Link>
-        <Link to="/locations" className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-all">
-          <MapPin className="w-4 h-4" />
-          <span>Locations</span>
-        </Link>
-        <Link to="/vehicles" className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-all">
-          <Car className="w-4 h-4" />
-          <span>Vehicle Registry</span>
-        </Link>
-        <Link to="/equipment" className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-all">
-          <Wrench className="w-4 h-4" />
-          <span>Equipment Registry</span>
         </Link>
         <Link to="/data" className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-all">
           <LayoutDashboard className="w-4 h-4" />
