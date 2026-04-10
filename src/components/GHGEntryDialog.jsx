@@ -255,6 +255,24 @@ export default function GHGEntryDialog({ open, onClose, onSaved, scope, category
         </div>
 
         <div className="p-6 space-y-5">
+          {/* Data Hierarchy Banner */}
+          <div className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3">
+            <div className="text-xs font-semibold text-slate-600 mb-2">📊 Data Quality Hierarchy — select the best tier you have</div>
+            <div className="flex items-center gap-1 text-xs">
+              {[
+                { label: "🥇 Gold", sub: "Verified LCA/EPD", color: "bg-amber-100 text-amber-800 border-amber-300" },
+                { label: "🥈 Silver", sub: "Supplier energy + BOM", color: "bg-slate-100 text-slate-700 border-slate-300" },
+                { label: "🥉 Bronze", sub: "Industry averages", color: "bg-orange-100 text-orange-700 border-orange-300" },
+                { label: "📊 Estimated", sub: "Spend-based only", color: "bg-red-50 text-red-600 border-red-200" },
+              ].map((t, i) => (
+                <div key={t.label} className="flex items-center gap-1">
+                  {i > 0 && <span className="text-slate-300">›</span>}
+                  <span className={`px-2 py-0.5 rounded-full border font-medium ${t.color}`}>{t.label}</span>
+                </div>
+              ))}
+              <span className="text-slate-400 ml-1">Higher = more accurate & audit-ready</span>
+            </div>
+          </div>
           {/* Common fields */}
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -368,10 +386,10 @@ export default function GHGEntryDialog({ open, onClose, onSaved, scope, category
                 </div>
                 <div className="space-y-2">
                   {[
-                    { key: "tier1", label: "Tier 1 · Supplier LCA / EPD", sub: "Gold standard — use verified tCO₂e", score: 10 },
-                    { key: "tier2", label: "Tier 2 · Supplier Scope 1&2 + BOM", sub: "Hybrid with allocation", score: 8 },
-                    { key: "tier3", label: "Tier 3 · BOM only (no GHG data)", sub: "Material mass × industry factors", score: 6 },
-                    { key: "tier4", label: "Tier 4 · Spend only", sub: "Spend × sector factor × 1.1 safety", score: 2 },
+                    { key: "tier1", label: "Tier 1: Exact Verified Footprint", sub: "We have a verified carbon report (PCF or EPD) from the supplier for this exact product.", score: 10 },
+                    { key: "tier2", label: "Tier 2: Supplier Energy + Material Recipe", sub: "We know the supplier's actual factory energy bills AND the materials used to make the product.", score: 8 },
+                    { key: "tier3", label: "Tier 3: Industry Averages", sub: "We only know the product type or its material recipe. We will estimate using global database averages.", score: 6 },
+                    { key: "tier4", label: "Tier 4: Spend-Based Estimate", sub: "We only know the financial cost. Estimate emissions based purely on dollars spent.", score: 2 },
                   ].map(t => (
                     <label key={t.key} className={`flex items-start gap-2.5 p-2.5 rounded-lg cursor-pointer transition-all ${form.tier === t.key ? "bg-white border border-blue-300 shadow-sm" : "hover:bg-blue-100/50"}`}>
                       <input type="radio" name="tier" className="mt-0.5 accent-blue-600" checked={form.tier === t.key} onChange={() => set("tier", t.key)} />
@@ -411,7 +429,10 @@ export default function GHGEntryDialog({ open, onClose, onSaved, scope, category
                     <Select value={form.alloc_driver} onValueChange={v => set("alloc_driver", v)}>
                       <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        {["Machine Hours", "Mass-Based", "Economic Allocation", "Sector Medians (Fallback)"].map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                        <SelectItem value="Mass-Based">By Weight (Mass-Based) — I know the weight of my order vs. total factory output</SelectItem>
+                        <SelectItem value="Top-Down Time">By Production Time (Top-Down) — I know how long my order took vs. total machine hours</SelectItem>
+                        <SelectItem value="Bottom-Up Machine Energy">By Direct Machine Energy (Bottom-Up) — I know the hours + machine kW rating</SelectItem>
+                        <SelectItem value="Economic Allocation">By Revenue (Economic) — I know what % of factory revenue my order represents</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -458,9 +479,9 @@ export default function GHGEntryDialog({ open, onClose, onSaved, scope, category
                   <Select value={form.transport_incoterm} onValueChange={v => set("transport_incoterm", v)}>
                     <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="DDP">DDP — Supplier delivers (bundled)</SelectItem>
-                      <SelectItem value="EXW">EXW / Ex-Works — We collect (Cat 4)</SelectItem>
-                      <SelectItem value="FOB">FOB — Split at port</SelectItem>
+                      <SelectItem value="DDP">DDP — Supplier delivers to us (transport already in their footprint)</SelectItem>
+                      <SelectItem value="EXW">EXW / Ex-Works — We arrange collection (we own the freight emissions → Cat 4)</SelectItem>
+                      <SelectItem value="FOB">FOB — Split at port (we cover port→facility leg only)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

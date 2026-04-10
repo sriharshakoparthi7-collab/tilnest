@@ -270,6 +270,13 @@ export default function EnvironmentPage() {
   const [locations, setLocations] = useState([]);
   const [fy, setFy] = useState("FY2024");
   const [showBulk, setShowBulk] = useState(false);
+  const [dialogProps, setDialogProps] = useState({});
+
+  const openAdd = (overrides = {}) => {
+    setEditEntry(null);
+    setDialogProps(overrides);
+    setShowDialog(true);
+  };
 
   const load = () => {
     base44.entities.EmissionEntry.filter({ scope: config.scope, category: config.category })
@@ -321,9 +328,32 @@ export default function EnvironmentPage() {
           <Button variant="outline" size="sm" className="gap-1.5 text-sm" onClick={() => setShowBulk(true)}>
             <Upload className="w-3.5 h-3.5" /> Import
           </Button>
-          <Button size="sm" className="gap-1.5" onClick={() => { setEditEntry(null); setShowDialog(true); }}>
-            <Plus className="w-4 h-4" /> Add {config.title}
-          </Button>
+          {categoryKey === "goods" ? (
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="outline" className="gap-1.5" onClick={() => openAdd({ defaultValues: { sub_category: "Capital Goods" } })}>
+                <Plus className="w-4 h-4" /> Add Capital Goods
+              </Button>
+              <Button size="sm" className="gap-1.5" onClick={() => openAdd({ defaultValues: { sub_category: "Purchased Goods & Services" } })}>
+                <Plus className="w-4 h-4" /> Add Purchased Goods &amp; Services
+              </Button>
+            </div>
+          ) : categoryKey === "energy" ? (
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={() => openAdd({ scope: "Scope 2", category: "Purchased Electricity" })}>
+                <Plus className="w-3.5 h-3.5" /> Electricity
+              </Button>
+              <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={() => openAdd({ scope: "Scope 1", category: "Stationary Combustion" })}>
+                <Plus className="w-3.5 h-3.5" /> Stationary Fuel
+              </Button>
+              <Button size="sm" className="gap-1.5 text-xs" onClick={() => openAdd({ scope: "Scope 2", category: "Purchased Heat & Steam" })}>
+                <Plus className="w-3.5 h-3.5" /> Heat / Steam
+              </Button>
+            </div>
+          ) : (
+            <Button size="sm" className="gap-1.5" onClick={() => openAdd()}>
+              <Plus className="w-4 h-4" /> Add {config.title}
+            </Button>
+          )}
         </div>
       </div>
 
@@ -464,11 +494,11 @@ export default function EnvironmentPage() {
 
       <GHGEntryDialog
         open={showDialog}
-        onClose={() => { setShowDialog(false); setEditEntry(null); }}
+        onClose={() => { setShowDialog(false); setEditEntry(null); setDialogProps({}); }}
         onSaved={load}
-        scope={config.scope}
-        category={config.category}
-        defaultValues={editEntry || {}}
+        scope={dialogProps.scope || config.scope}
+        category={dialogProps.category || config.category}
+        defaultValues={editEntry || dialogProps.defaultValues || {}}
       />
     </div>
   );
