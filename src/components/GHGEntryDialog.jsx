@@ -107,11 +107,11 @@ function QualityBadge({ score }) {
 }
 
 // ─── Main Dialog ──────────────────────────────────────────────────────────────
-export default function GHGEntryDialog({ open, onClose, onSaved, scope, category, defaultValues = {}, goodsSubcatOverride = null }) {
+export default function GHGEntryDialog({ open, onClose, onSaved, scope, category, defaultValues = {} }) {
   const [locations, setLocations] = useState([]);
   const [saving, setSaving] = useState(false);
   const [showAudit, setShowAudit] = useState(false);
-  const [goodsSubcat, setGoodsSubcat] = useState(goodsSubcatOverride || defaultValues.sub_category || "purchased_goods");
+  const [goodsSubcat, setGoodsSubcat] = useState(defaultValues.sub_category || "purchased_goods");
 
   const isGoods = category?.includes("Goods") || category?.includes("Capital");
   const isWaste = category?.includes("Waste") || category?.includes("End-of-Life");
@@ -143,10 +143,7 @@ export default function GHGEntryDialog({ open, onClose, onSaved, scope, category
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
   useEffect(() => { base44.entities.Location.list().then(setLocations); }, []);
-  useEffect(() => {
-    setForm(f => ({ ...f, ...defaultValues }));
-    if (goodsSubcatOverride) setGoodsSubcat(goodsSubcatOverride);
-  }, [open]);
+  useEffect(() => { setForm(f => ({ ...f, ...defaultValues })); }, [open]);
 
   // ─── Compute preview ────────────────────────────────────────────────────────
   let result = { tco2e: 0, score: 5, method: "Activity-based", audit: [], categorySplit: {}, avoided: 0, allocationDriver: "" };
@@ -292,60 +289,24 @@ export default function GHGEntryDialog({ open, onClose, onSaved, scope, category
           {/* ── GOODS & SERVICES ── */}
           {isGoods && (
             <div className="space-y-4">
-
-              {/* ── TIER SELECTION — FIRST ── */}
-              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-                <div className="text-xs font-semibold text-blue-800 mb-1 flex items-center gap-1.5">
-                  <Info className="w-3.5 h-3.5" /> Step 1: How good is your data?
-                </div>
-                <p className="text-xs text-blue-600 mb-3">Select the best data quality tier available for this entry.</p>
-                <div className="space-y-2">
+              {/* Smart Sub-category */}
+              <div className="border border-slate-200 rounded-xl overflow-hidden">
+                <div className="bg-slate-50 px-4 py-2.5 text-xs font-semibold text-slate-600 border-b border-slate-200">What type of goods?</div>
+                <div className="p-3 space-y-2">
                   {[
-                    { key: "tier1", label: "Tier 1: Exact Verified Footprint", badge: "Gold", badgeColor: "bg-amber-100 text-amber-700 border-amber-300", sub: "We have a verified carbon report (PCF or EPD) from the supplier for this exact product.", score: 10 },
-                    { key: "tier2", label: "Tier 2: Supplier Energy + Material Recipe", badge: "Silver", badgeColor: "bg-slate-100 text-slate-600 border-slate-300", sub: "We know the supplier's actual factory energy bills AND the materials used to make the product.", score: 8 },
-                    { key: "tier3", label: "Tier 3: Industry Averages", badge: "Bronze", badgeColor: "bg-orange-100 text-orange-700 border-orange-300", sub: "We only know the product type or its material recipe. We will estimate using global database averages.", score: 6 },
-                    { key: "tier4", label: "Tier 4: Spend-Based Estimate", badge: "Estimated", badgeColor: "bg-red-50 text-red-600 border-red-200", sub: "We only know the financial cost. Estimate emissions based purely on dollars spent.", score: 2 },
-                  ].map(t => (
-                    <label key={t.key} className={`flex items-start gap-2.5 p-2.5 rounded-lg cursor-pointer transition-all border ${form.tier === t.key ? "bg-white border-blue-300 shadow-sm" : "border-transparent hover:bg-blue-100/40"}`}>
-                      <input type="radio" name="tier" className="mt-0.5 accent-blue-600" checked={form.tier === t.key} onChange={() => set("tier", t.key)} />
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-sm font-semibold text-slate-800">{t.label}</span>
-                          <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${t.badgeColor}`}>{t.badge}</span>
-                        </div>
-                        <span className="text-xs text-slate-500 mt-0.5 block">{t.sub}</span>
+                    { key: "capital_goods", label: "Capital Goods", sub: "Long-term assets: machinery, IT equipment, vehicles, facilities" },
+                    { key: "purchased_goods", label: "Purchased Goods & Services", sub: "Consumables, supplies, professional services" },
+                  ].map(opt => (
+                    <label key={opt.key} className={`flex items-start gap-2.5 p-2.5 rounded-lg cursor-pointer transition-all border ${goodsSubcat === opt.key ? "bg-blue-50 border-blue-300" : "border-transparent hover:bg-slate-50"}`}>
+                      <input type="radio" name="goodsSubcat" checked={goodsSubcat === opt.key} onChange={() => setGoodsSubcat(opt.key)} className="mt-0.5 accent-blue-600" />
+                      <div>
+                        <div className="text-sm font-medium text-slate-800">{opt.label}</div>
+                        <div className="text-xs text-slate-500 mt-0.5">{opt.sub}</div>
                       </div>
                     </label>
                   ))}
                 </div>
               </div>
-
-              {/* ── Sub-category (pre-selected if opened from button) ── */}
-              {!goodsSubcatOverride && (
-                <div className="border border-slate-200 rounded-xl overflow-hidden">
-                  <div className="bg-slate-50 px-4 py-2.5 text-xs font-semibold text-slate-600 border-b border-slate-200">What type of goods?</div>
-                  <div className="p-3 space-y-2">
-                    {[
-                      { key: "capital_goods", label: "Capital Goods", sub: "Long-term assets: machinery, IT equipment, vehicles, facilities" },
-                      { key: "purchased_goods", label: "Purchased Goods & Services (Operational Purchases)", sub: "Consumables, supplies, professional services" },
-                    ].map(opt => (
-                      <label key={opt.key} className={`flex items-start gap-2.5 p-2.5 rounded-lg cursor-pointer transition-all border ${goodsSubcat === opt.key ? "bg-blue-50 border-blue-300" : "border-transparent hover:bg-slate-50"}`}>
-                        <input type="radio" name="goodsSubcat" checked={goodsSubcat === opt.key} onChange={() => setGoodsSubcat(opt.key)} className="mt-0.5 accent-blue-600" />
-                        <div>
-                          <div className="text-sm font-medium text-slate-800">{opt.label}</div>
-                          <div className="text-xs text-slate-500 mt-0.5">{opt.sub}</div>
-                        </div>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {goodsSubcatOverride && (
-                <div className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5">
-                  <span className="text-xs font-semibold text-slate-600">Type: </span>
-                  <span className="text-xs text-slate-800">{goodsSubcatOverride === "capital_goods" ? "Capital Goods" : "Purchased Goods & Services (Operational Purchases)"}</span>
-                </div>
-              )}
 
               {goodsSubcat === "capital_goods" && (
                 <div className="space-y-3">
@@ -400,56 +361,60 @@ export default function GHGEntryDialog({ open, onClose, onSaved, scope, category
                 </div>
               )}
 
-              {/* Tier-specific inputs */}
+              {/* Data Quality Tier */}
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                <div className="text-xs font-semibold text-blue-800 mb-3 flex items-center gap-1.5">
+                  <Info className="w-3.5 h-3.5" /> Data Quality Tier — select best available
+                </div>
+                <div className="space-y-2">
+                  {[
+                    { key: "tier1", label: "Tier 1 · Supplier LCA / EPD", sub: "Gold standard — use verified tCO₂e", score: 10 },
+                    { key: "tier2", label: "Tier 2 · Supplier Scope 1&2 + BOM", sub: "Hybrid with allocation", score: 8 },
+                    { key: "tier3", label: "Tier 3 · BOM only (no GHG data)", sub: "Material mass × industry factors", score: 6 },
+                    { key: "tier4", label: "Tier 4 · Spend only", sub: "Spend × sector factor × 1.1 safety", score: 2 },
+                  ].map(t => (
+                    <label key={t.key} className={`flex items-start gap-2.5 p-2.5 rounded-lg cursor-pointer transition-all ${form.tier === t.key ? "bg-white border border-blue-300 shadow-sm" : "hover:bg-blue-100/50"}`}>
+                      <input type="radio" name="tier" className="mt-0.5 accent-blue-600" checked={form.tier === t.key} onChange={() => set("tier", t.key)} />
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium text-slate-800">{t.label}</span>
+                          <QualityBadge score={t.score} />
+                        </div>
+                        <span className="text-xs text-slate-500">{t.sub}</span>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
               {form.tier === "tier1" && (
-                <div className="space-y-3">
-                  <div>
-                    <Label className="text-sm font-medium">Verified tCO₂e (from PCF / EPD report)</Label>
-                    <Input type="number" className="mt-1" placeholder="0.000" value={form.primary_tco2e} onChange={e => set("primary_tco2e", e.target.value)} />
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium">Quantity Purchased</Label>
-                    <Input type="number" className="mt-1" placeholder="0" value={form.quantity} onChange={e => set("quantity", e.target.value)} />
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium">PCF / EPD Document URL (optional)</Label>
-                    <Input className="mt-1" placeholder="https://..." value={form.pcf_url || ""} onChange={e => set("pcf_url", e.target.value)} />
-                  </div>
+                <div>
+                  <Label className="text-sm font-medium">Verified tCO₂e (from LCA/EPD)</Label>
+                  <Input type="number" className="mt-1" placeholder="0.000" value={form.primary_tco2e} onChange={e => set("primary_tco2e", e.target.value)} />
                 </div>
               )}
 
               {form.tier === "tier2" && (
                 <div className="space-y-3">
-                  <p className="text-xs text-slate-500 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">Provide the supplier's total Scope 1+2 emissions and how much of their production your order represents.</p>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <Label className="text-sm font-medium">Supplier Scope 1+2 (kg CO₂e)</Label>
                       <Input type="number" className="mt-1" placeholder="0" value={form.supplier_s1s2} onChange={e => set("supplier_s1s2", e.target.value)} />
                     </div>
                     <div>
-                      <Label className="text-sm font-medium">Your allocation (%)</Label>
+                      <Label className="text-sm font-medium">Product allocation %</Label>
                       <Input type="number" className="mt-1" placeholder="100" min="0" max="100" value={form.alloc_pct} onChange={e => set("alloc_pct", e.target.value)} />
                     </div>
                   </div>
                   <div>
-                    <Label className="text-sm font-medium">Allocation Method</Label>
+                    <Label className="text-sm font-medium">Allocation Driver</Label>
                     <Select value={form.alloc_driver} onValueChange={v => set("alloc_driver", v)}>
                       <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="By Weight (Mass-Based Allocation)">By Weight (Mass-Based) — Use if you know your order weight vs factory total output</SelectItem>
-                        <SelectItem value="By Production Time (Top-Down Allocation)">By Production Time (Top-Down) — Use if you know order hours AND total machine hours</SelectItem>
-                        <SelectItem value="By Direct Machine Energy (Bottom-Up Calculation)">By Direct Machine Energy (Bottom-Up) — Use if you know order hours AND machine kW rating</SelectItem>
-                        <SelectItem value="By Revenue (Economic Allocation)">By Revenue (Economic) — Use if you know your % of factory revenue</SelectItem>
+                        {["Machine Hours", "Mass-Based", "Economic Allocation", "Sector Medians (Fallback)"].map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
-                  <label className="flex items-start gap-2.5 p-2.5 rounded-lg border border-slate-200 cursor-pointer bg-slate-50">
-                    <input type="checkbox" className="mt-0.5 accent-blue-600" checked={form.is_proxy_bom || false} onChange={e => set("is_proxy_bom", e.target.checked)} />
-                    <div>
-                      <div className="text-sm font-medium text-slate-700">I don't have exact materials (Use a Proxy BOM)</div>
-                      <div className="text-xs text-slate-500 mt-0.5">Allows you to estimate materials so you can still use supplier energy data without double-counting industry averages.</div>
-                    </div>
-                  </label>
                 </div>
               )}
 
@@ -472,11 +437,11 @@ export default function GHGEntryDialog({ open, onClose, onSaved, scope, category
               {form.tier === "tier4" && (
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <Label className="text-sm font-medium">Total Spend (USD)</Label>
+                    <Label className="text-sm font-medium">Spend (USD)</Label>
                     <Input type="number" className="mt-1" placeholder="0.00" value={form.spend} onChange={e => set("spend", e.target.value)} />
                   </div>
                   <div>
-                    <Label className="text-sm font-medium">Industry Sector (EEIO)</Label>
+                    <Label className="text-sm font-medium">Sector</Label>
                     <Select value={form.sector} onValueChange={v => set("sector", v)}>
                       <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
                       <SelectContent>{Object.keys(SECTOR_FACTORS).map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
@@ -487,39 +452,34 @@ export default function GHGEntryDialog({ open, onClose, onSaved, scope, category
 
               {/* Upstream Transport (Cat 4) */}
               <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
-                <div className="text-xs font-semibold text-slate-700">Scope 3 Cat 4 — Upstream Transport & Delivery Terms</div>
+                <div className="text-xs font-semibold text-slate-700">Scope 3 Cat 4 — Upstream Transport</div>
                 <div>
-                  <Label className="text-sm font-medium">Delivery Terms (Incoterm)</Label>
+                  <Label className="text-sm font-medium">Delivery terms (Incoterm)</Label>
                   <Select value={form.transport_incoterm} onValueChange={v => set("transport_incoterm", v)}>
                     <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="DDP">DDP (Delivered Duty Paid) — Supplier delivers to us. Transport emissions are in the supplier's product footprint.</SelectItem>
-                      <SelectItem value="EXW">EXW (Ex-Works) — We arrange the collection. We are responsible for the freight (triggers Cat 4 calculation).</SelectItem>
-                      <SelectItem value="FOB">FOB (Free on Board) — Split at port. Supplier covers to port; we cover port to our facility.</SelectItem>
+                      <SelectItem value="DDP">DDP — Supplier delivers (bundled)</SelectItem>
+                      <SelectItem value="EXW">EXW / Ex-Works — We collect (Cat 4)</SelectItem>
+                      <SelectItem value="FOB">FOB — Split at port</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 {form.transport_incoterm !== "DDP" && (
-                  <div className="space-y-2">
-                    <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-                      {form.transport_incoterm === "EXW" ? "Full freight leg: enter origin → your facility details below." : "Port leg only: enter port of loading → your facility details below."}
-                    </p>
-                    <div className="grid grid-cols-3 gap-2">
-                      <div>
-                        <Label className="text-xs">Shipment Weight (kg)</Label>
-                        <Input type="number" className="mt-1 h-8 text-xs" placeholder="0" value={form.transport_kg} onChange={e => set("transport_kg", e.target.value)} />
-                      </div>
-                      <div>
-                        <Label className="text-xs">Distance (km)</Label>
-                        <Input type="number" className="mt-1 h-8 text-xs" placeholder="0" value={form.transport_distance} onChange={e => set("transport_distance", e.target.value)} />
-                      </div>
-                      <div>
-                        <Label className="text-xs">Transport Mode</Label>
-                        <Select value={form.transport_mode} onValueChange={v => set("transport_mode", v)}>
-                          <SelectTrigger className="mt-1 h-8 text-xs"><SelectValue /></SelectTrigger>
-                          <SelectContent>{Object.keys(TRANSPORT_MODE_FACTORS).map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
-                        </Select>
-                      </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div>
+                      <Label className="text-xs">Weight (kg)</Label>
+                      <Input type="number" className="mt-1 h-8 text-xs" placeholder="0" value={form.transport_kg} onChange={e => set("transport_kg", e.target.value)} />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Distance (km)</Label>
+                      <Input type="number" className="mt-1 h-8 text-xs" placeholder="0" value={form.transport_distance} onChange={e => set("transport_distance", e.target.value)} />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Mode</Label>
+                      <Select value={form.transport_mode} onValueChange={v => set("transport_mode", v)}>
+                        <SelectTrigger className="mt-1 h-8 text-xs"><SelectValue /></SelectTrigger>
+                        <SelectContent>{Object.keys(TRANSPORT_MODE_FACTORS).map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
+                      </Select>
                     </div>
                   </div>
                 )}

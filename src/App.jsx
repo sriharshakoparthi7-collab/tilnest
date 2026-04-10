@@ -15,7 +15,6 @@ import Reports from './pages/Reports';
 import DataManagement from './pages/DataManagement';
 import SupplyChain from './pages/SupplyChain';
 import VehicleRegistry from './pages/VehicleRegistry';
-import Equipment from './pages/Equipment';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -65,7 +64,6 @@ const AuthenticatedApp = () => {
         <Route path="/data" element={<DataManagement />} />
         <Route path="/supply-chain" element={<SupplyChain />} />
         <Route path="/vehicles" element={<VehicleRegistry />} />
-        <Route path="/equipment" element={<Equipment />} />
         <Route path="*" element={<Dashboard />} />
       </Route>
       </Routes>

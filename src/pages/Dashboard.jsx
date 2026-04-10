@@ -1,33 +1,16 @@
 import { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { Link } from "react-router-dom";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
-import { Flame, Zap, Globe, ChevronDown, ChevronUp, Plus } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend } from "recharts";
+import { TrendingDown, TrendingUp, Flame, Zap, Globe, ArrowRight, Plus } from "lucide-react";
 
 const SCOPE_COLORS = { "Scope 1": "#10b981", "Scope 2": "#f59e0b", "Scope 3": "#3b82f6" };
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-const SCOPE_CATEGORY_PATHS = {
-  "Purchased Electricity": "/environment/energy",
-  "Business Travel": "/environment/travel",
-  "Purchased Goods and Services": "/environment/goods",
-  "Waste Generated in Operations": "/environment/waste",
-  "Employee Commuting": "/environment/employees",
-  "Refrigerants": "/environment/refrigerants",
-  "Water Consumption": "/environment/water",
-  "Upstream Transportation & Distribution": "/environment/transportation",
-  "Upstream Leased Assets": "/environment/leased-assets",
-  "Processing of Sold Products": "/environment/sold-products",
-  "Franchises": "/environment/franchises",
-  "Investments": "/environment/investments",
-  "Other Emissions": "/environment/other",
-};
-
 export default function Dashboard() {
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [expandedScope, setExpandedScope] = useState(null);
 
   useEffect(() => {
     base44.entities.EmissionEntry.filter({ reporting_year: 2024 }).then(data => {
@@ -62,62 +45,28 @@ export default function Dashboard() {
     .sort((a, b) => (b.tco2e || 0) - (a.tco2e || 0))
     .slice(0, 6);
 
-  const categoryBreakdown = (scope) => {
-    const cats = {};
-    entries.filter(e => e.scope === scope).forEach(e => {
-      const key = e.category || "Other";
-      cats[key] = (cats[key] || 0) + (e.tco2e || 0);
-    });
-    return Object.entries(cats).sort((a, b) => b[1] - a[1]);
-  };
-
-  const ScopeCard = ({ scope, icon: Icon, color, bgColor, borderColor }) => {
-    const isExpanded = expandedScope === scope;
-    const breakdown = categoryBreakdown(scope);
-    return (
-      <div className={`rounded-xl border bg-card transition-all ${isExpanded ? borderColor + " shadow-md" : "border-border"}`}>
-        <button className="w-full text-left p-5" onClick={() => setExpandedScope(isExpanded ? null : scope)}>
-          <div className="flex items-center justify-between mb-3">
-            <div className={`w-9 h-9 rounded-lg ${bgColor} flex items-center justify-center`}>
-              <Icon className={`w-5 h-5 ${color}`} />
-            </div>
-            {isExpanded ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+  const ScopeCard = ({ scope, icon: Icon, color, bgColor, path }) => (
+    <Link to={path} className="block">
+      <div className={`rounded-xl border border-border bg-card p-5 hover:shadow-md transition-all group`}>
+        <div className="flex items-center justify-between mb-3">
+          <div className={`w-9 h-9 rounded-lg ${bgColor} flex items-center justify-center`}>
+            <Icon className={`w-5 h-5 ${color}`} />
           </div>
-          <div className="text-xs text-muted-foreground font-medium mb-1">{scope}</div>
-          <div className="text-2xl font-bold text-foreground">
-            {(totalByScope[scope] || 0).toFixed(2)}
-            <span className="text-sm font-normal text-muted-foreground ml-1">tCO₂e</span>
-          </div>
-          {total > 0 && (
-            <div className="text-xs text-muted-foreground mt-1">
-              {(((totalByScope[scope] || 0) / total) * 100).toFixed(1)}% of total
-            </div>
-          )}
-        </button>
-        {isExpanded && (
-          <div className="border-t border-border px-5 pb-4 pt-3 space-y-2">
-            <div className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Breakdown by Category</div>
-            {breakdown.length === 0 ? (
-              <p className="text-xs text-muted-foreground">No data yet for this scope.</p>
-            ) : breakdown.map(([cat, val]) => (
-              <Link key={cat} to={SCOPE_CATEGORY_PATHS[cat] || "/environment/other"} className="flex items-center justify-between group hover:bg-muted/40 rounded-lg px-2 py-1.5 transition-colors">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: SCOPE_COLORS[scope] }} />
-                  <span className="text-xs text-slate-700 group-hover:text-slate-900">{cat}</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-20 bg-slate-100 rounded-full h-1.5">
-                    <div className="h-1.5 rounded-full" style={{ backgroundColor: SCOPE_COLORS[scope], width: `${totalByScope[scope] > 0 ? (val / totalByScope[scope]) * 100 : 0}%` }} />
-                  </div>
-                  <span className="text-xs font-semibold text-slate-700 w-16 text-right">{val.toFixed(3)} t</span>
-                </div>
-              </Link>
-            ))}
+          <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:translate-x-0.5 transition-transform" />
+        </div>
+        <div className="text-xs text-muted-foreground font-medium mb-1">{scope}</div>
+        <div className="text-2xl font-bold text-foreground">
+          {(totalByScope[scope] || 0).toFixed(2)}
+          <span className="text-sm font-normal text-muted-foreground ml-1">tCO₂e</span>
+        </div>
+        {total > 0 && (
+          <div className="text-xs text-muted-foreground mt-1">
+            {(((totalByScope[scope] || 0) / total) * 100).toFixed(1)}% of total
           </div>
         )}
       </div>
-    );
-  };
+    </Link>
+  );
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
@@ -164,9 +113,9 @@ export default function Dashboard() {
 
       {/* Scope Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <ScopeCard scope="Scope 1" icon={Flame} color="text-emerald-600" bgColor="bg-emerald-50" borderColor="border-emerald-300" />
-        <ScopeCard scope="Scope 2" icon={Zap} color="text-amber-600" bgColor="bg-amber-50" borderColor="border-amber-300" />
-        <ScopeCard scope="Scope 3" icon={Globe} color="text-blue-600" bgColor="bg-blue-50" borderColor="border-blue-300" />
+        <ScopeCard scope="Scope 1" icon={Flame} color="text-emerald-600" bgColor="bg-emerald-50" path="/scope1/energy" />
+        <ScopeCard scope="Scope 2" icon={Zap} color="text-amber-600" bgColor="bg-amber-50" path="/scope2/electricity" />
+        <ScopeCard scope="Scope 3" icon={Globe} color="text-blue-600" bgColor="bg-blue-50" path="/scope3" />
       </div>
 
       {/* Charts Row */}
