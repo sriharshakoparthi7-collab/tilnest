@@ -264,6 +264,7 @@ export default function EnvironmentPage() {
   const [loading, setLoading] = useState(true);
   const [showDialog, setShowDialog] = useState(false);
   const [editEntry, setEditEntry] = useState(null);
+  const [goodsSubcatOverride, setGoodsSubcatOverride] = useState(null);
   const [search, setSearch] = useState("");
   const [energyTypeFilter, setEnergyTypeFilter] = useState(config.energyTypes?.[0] || "");
   const [locationFilter, setLocationFilter] = useState("All locations");
@@ -321,9 +322,20 @@ export default function EnvironmentPage() {
           <Button variant="outline" size="sm" className="gap-1.5 text-sm" onClick={() => setShowBulk(true)}>
             <Upload className="w-3.5 h-3.5" /> Import
           </Button>
-          <Button size="sm" className="gap-1.5" onClick={() => { setEditEntry(null); setShowDialog(true); }}>
-            <Plus className="w-4 h-4" /> Add {config.title}
-          </Button>
+          {categoryKey === "goods" ? (
+            <>
+              <Button size="sm" variant="outline" className="gap-1.5" onClick={() => { setEditEntry(null); setGoodsSubcatOverride("capital_goods"); setShowDialog(true); }}>
+                <Plus className="w-4 h-4" /> Add Capital Goods
+              </Button>
+              <Button size="sm" className="gap-1.5" onClick={() => { setEditEntry(null); setGoodsSubcatOverride("purchased_goods"); setShowDialog(true); }}>
+                <Plus className="w-4 h-4" /> Add Purchased Goods &amp; Services
+              </Button>
+            </>
+          ) : (
+            <Button size="sm" className="gap-1.5" onClick={() => { setEditEntry(null); setGoodsSubcatOverride(null); setShowDialog(true); }}>
+              <Plus className="w-4 h-4" /> Add {config.title}
+            </Button>
+          )}
         </div>
       </div>
 
@@ -464,11 +476,12 @@ export default function EnvironmentPage() {
 
       <GHGEntryDialog
         open={showDialog}
-        onClose={() => { setShowDialog(false); setEditEntry(null); }}
+        onClose={() => { setShowDialog(false); setEditEntry(null); setGoodsSubcatOverride(null); }}
         onSaved={load}
         scope={config.scope}
         category={config.category}
         defaultValues={editEntry || {}}
+        goodsSubcatOverride={goodsSubcatOverride}
       />
     </div>
   );
