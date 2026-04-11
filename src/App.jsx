@@ -53,6 +53,7 @@ const AuthenticatedApp = () => {
         <Route path="/environment/waste" element={<EnvironmentPage />} />
         <Route path="/environment/employees" element={<EnvironmentPage />} />
         <Route path="/environment/refrigerants" element={<EnvironmentPage />} />
+        <Route path="/environment/process-emissions" element={<EnvironmentPage />} />
         <Route path="/environment/water" element={<EnvironmentPage />} />
         <Route path="/environment/transportation" element={<EnvironmentPage />} />
         <Route path="/environment/leased-assets" element={<EnvironmentPage />} />

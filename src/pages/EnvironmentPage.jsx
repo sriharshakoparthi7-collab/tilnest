@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import GHGEntryDialog from "../components/GHGEntryDialog";
+import ProductClassificationGateway from "../components/ProductClassificationGateway";
 import BulkUploadModal from "../components/BulkUploadModal";
 import EmissionsTable from "../components/EmissionsTable";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, LineChart, Line, XAxis, YAxis, CartesianGrid, Legend } from "recharts";
@@ -47,7 +48,6 @@ const CATEGORY_CONFIG = {
       { key: "amount_paid", label: "Amount paid" },
       { key: "tco2e", label: "Emissions" },
     ],
-    travelTypes: ["Vehicles", "Flights", "Rideshare", "Accommodation", "Trains", "Buses"],
     defaultUnit: "km",
     pieLabel: "Travel Sources",
   },
@@ -248,6 +248,22 @@ const CATEGORY_CONFIG = {
     defaultUnit: "t",
     pieLabel: "Sources",
   },
+  "process-emissions": {
+    title: "Process Emissions",
+    scope: "Scope 1",
+    category: "Process Emissions",
+    description: "Industrial process emissions from chemical reactions, not fuel combustion (e.g., cement clinker, limestone calcination)",
+    cols: [
+      { key: "source_name", label: "Process / Material" },
+      { key: "location_name", label: "Location" },
+      { key: "start_date", label: "Date" },
+      { key: "quantity", label: "Mass (Tonnes)" },
+      { key: "unit", label: "Unit" },
+      { key: "tco2e", label: "Emissions" },
+    ],
+    defaultUnit: "t",
+    pieLabel: "Process Types",
+  },
 };
 
 const SCOPE_COLORS = { "Scope 1": "#10b981", "Scope 2": "#f59e0b", "Scope 3": "#3b82f6" };
@@ -271,6 +287,7 @@ export default function EnvironmentPage() {
   const [fy, setFy] = useState("FY2024");
   const [showBulk, setShowBulk] = useState(false);
   const [dialogProps, setDialogProps] = useState({});
+  const [showGateway, setShowGateway] = useState(false);
 
   const openAdd = (overrides = {}) => {
     setEditEntry(null);
@@ -349,6 +366,40 @@ export default function EnvironmentPage() {
                 <Plus className="w-3.5 h-3.5" /> Heat / Steam
               </Button>
             </div>
+          ) : categoryKey === "travel" ? (
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={() => openAdd({ defaultValues: { sub_category: "Air Travel" } })}>
+                <Plus className="w-3.5 h-3.5" /> ✈ Air Travel
+              </Button>
+              <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={() => openAdd({ defaultValues: { sub_category: "Road & Rail" } })}>
+                <Plus className="w-3.5 h-3.5" /> 🚗 Road & Rail
+              </Button>
+              <Button size="sm" className="gap-1.5 text-xs" onClick={() => openAdd({ defaultValues: { sub_category: "Accommodation" } })}>
+                <Plus className="w-3.5 h-3.5" /> 🏨 Accommodation
+              </Button>
+            </div>
+          ) : categoryKey === "transportation" ? (
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={() => openAdd({ scope: "Scope 3", category: "Upstream Transportation & Distribution" })}>
+                <Plus className="w-3.5 h-3.5" /> Upstream (Cat 4)
+              </Button>
+              <Button size="sm" className="gap-1.5 text-xs" onClick={() => openAdd({ scope: "Scope 3", category: "Downstream Transportation & Distribution" })}>
+                <Plus className="w-3.5 h-3.5" /> Downstream (Cat 9)
+              </Button>
+            </div>
+          ) : categoryKey === "leased-assets" ? (
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={() => openAdd({ scope: "Scope 3", category: "Upstream Leased Assets" })}>
+                <Plus className="w-3.5 h-3.5" /> Upstream (Cat 8)
+              </Button>
+              <Button size="sm" className="gap-1.5 text-xs" onClick={() => openAdd({ scope: "Scope 3", category: "Downstream Leased Assets" })}>
+                <Plus className="w-3.5 h-3.5" /> Downstream (Cat 13)
+              </Button>
+            </div>
+          ) : categoryKey === "sold-products" ? (
+            <Button size="sm" className="gap-1.5" onClick={() => setShowGateway(true)}>
+              <Plus className="w-4 h-4" /> Add Product
+            </Button>
           ) : (
             <Button size="sm" className="gap-1.5" onClick={() => openAdd()}>
               <Plus className="w-4 h-4" /> Add {config.title}
@@ -489,6 +540,15 @@ export default function EnvironmentPage() {
           }
           load();
           return { created, skipped, errors: [] };
+        }}
+      />
+
+      <ProductClassificationGateway
+        open={showGateway}
+        onClose={() => setShowGateway(false)}
+        onAddEntry={(scope, category) => {
+          setShowGateway(false);
+          openAdd({ scope, category });
         }}
       />
 

@@ -137,6 +137,8 @@ export default function GHGEntryDialog({ open, onClose, onSaved, scope, category
     refrigerant_gas: "R-410A", refrigerant_kg: "",
     water_m3: "",
     amount_paid: "", currency: "USD",
+    energy_tier: "tier2", is_proxy_bom: false,
+    utility_provider: "", building_type: "Offices", floor_area_sqm: "", ncc_climate_zone: "Zone 5",
     ...defaultValues
   });
 
@@ -188,13 +190,31 @@ export default function GHGEntryDialog({ open, onClose, onSaved, scope, category
     result.categorySplit = { "Scope 1 Fugitive": result.tco2e.toFixed(4) };
     result.audit = ["IPCC AR6 GWP100", "GHG Protocol Scope 1", "ISO 14064-1"];
   } else if (isEnergy) {
-    const ef = ENERGY_FACTORS[form.energy_type] || 0.79;
-    const greenAdj = 1 - (parseFloat(form.green_power_pct) || 0) / 100;
-    result.tco2e = (parseFloat(form.quantity) || 0) * ef * greenAdj / 1000;
-    result.score = 8;
-    result.method = `${scope === "Scope 1" ? "Direct combustion" : "Location-based"} · AUS Grid`;
-    result.categorySplit = { [scope]: result.tco2e.toFixed(4) };
-    result.audit = ["Australian NGA 2024", "AEMO Grid Emissions", "GHG Protocol Scope 2 Guidance"];
+    const energyTier = form.energy_tier || "tier2";
+    if (energyTier === "tier3") {
+      const intensityMap = { "Offices": 185, "Warehouses": 85, "Health Facilities": 380, "Educational": 120, "Retail": 210, "Hospitality": 340, "Industrial": 150, "Other": 150 };
+      const intensity = intensityMap[form.building_type || "Offices"] || 150;
+      const estimatedKwh = (parseFloat(form.floor_area_sqm) || 0) * intensity;
+      result.tco2e = estimatedKwh * 0.79 / 1000;
+      result.score = 5;
+      result.method = "CBPS/NCC Building Intensity · AUS Grid";
+      result.categorySplit = { [scope]: result.tco2e.toFixed(4) };
+      result.audit = ["CBPS Intensity Tables", "NCC Climate Zone Data", "Australian NGA 2024"];
+    } else if (energyTier === "tier4") {
+      result.tco2e = (parseFloat(form.amount_paid) || 0) * 0.0025;
+      result.score = 2;
+      result.method = "Spend-based · EEIO";
+      result.categorySplit = { [scope]: result.tco2e.toFixed(4) };
+      result.audit = ["EEIO Database", "Spend-based estimation"];
+    } else {
+      const ef = ENERGY_FACTORS[form.energy_type] || 0.79;
+      const greenAdj = 1 - (parseFloat(form.green_power_pct) || 0) / 100;
+      result.tco2e = (parseFloat(form.quantity) || 0) * ef * greenAdj / 1000;
+      result.score = energyTier === "tier1" ? 9 : 7;
+      result.method = `${scope === "Scope 1" ? "Direct combustion" : energyTier === "tier1" ? "Market-based" : "Location-based"} · AUS Grid`;
+      result.categorySplit = { [scope]: result.tco2e.toFixed(4) };
+      result.audit = ["Australian NGA 2024", "AEMO Grid Emissions", "GHG Protocol Scope 2 Guidance"];
+    }
   } else if (isWater) {
     result.tco2e = (parseFloat(form.water_m3) || 0) * 0.344 / 1000;
     result.score = 6;
@@ -236,7 +256,12 @@ export default function GHGEntryDialog({ open, onClose, onSaved, scope, category
 
   if (!open) return null;
 
-  const previewQuantity = parseFloat(form.quantity || form.travel_distance_km || form.water_m3 || form.refrigerant_kg || form.waste_quantity_kg || form.spend || form.material_mass_kg || form.commute_days || 0);
+  const previewQuantity = parseFloat(
+    ((form.energy_tier || "tier2") === "tier3" ? form.floor_area_sqm : null) ||
+    ((form.energy_tier || "tier2") === "tier4" && isEnergy ? form.amount_paid : null) ||
+    form.quantity || form.travel_distance_km || form.water_m3 || form.refrigerant_kg ||
+    form.waste_quantity_kg || form.spend || form.material_mass_kg || form.commute_days || 0
+  );
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
@@ -436,6 +461,14 @@ export default function GHGEntryDialog({ open, onClose, onSaved, scope, category
                       </SelectContent>
                     </Select>
                   </div>
+                  {/* Proxy BOM Checkbox */}
+                  <div className="flex items-start gap-2.5 p-3 bg-yellow-50 border border-yellow-200 rounded-xl">
+                    <input type="checkbox" id="proxy_bom" checked={form.is_proxy_bom || false} onChange={e => set("is_proxy_bom", e.target.checked)} className="mt-0.5 w-4 h-4 accent-yellow-600 flex-shrink-0" />
+                    <label htmlFor="proxy_bom" className="cursor-pointer flex-1">
+                      <div className="text-sm font-medium text-slate-800">I don't have the exact materials (Use a Proxy BOM)</div>
+                      <div className="text-xs text-slate-500 mt-0.5">Checking this allows you to estimate materials (e.g., 'Generic Wood', 'Generic Steel') so you can still use your supplier's exact energy data without double-counting industry averages.</div>
+                    </label>
+                  </div>
                 </div>
               )}
 
@@ -563,31 +596,115 @@ export default function GHGEntryDialog({ open, onClose, onSaved, scope, category
 
           {/* ── ENERGY ── */}
           {isEnergy && !isGoods && !isWaste && (
-            <div className="space-y-3">
-              <div>
-                <Label className="text-sm font-medium">Energy / Fuel Type</Label>
-                <Select value={form.energy_type} onValueChange={v => set("energy_type", v)}>
-                  <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                  <SelectContent>{Object.entries(ENERGY_FACTORS).map(([k, v]) => <SelectItem key={k} value={k}>{k} — {v} kg/unit</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label className="text-sm font-medium">Quantity</Label>
-                  <Input type="number" className="mt-1" placeholder="0" value={form.quantity} onChange={e => set("quantity", e.target.value)} />
+            <div className="space-y-4">
+              {/* Energy Tier Selection */}
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                <div className="text-xs font-semibold text-blue-800 mb-3">Select Data Quality Tier</div>
+                <div className="space-y-2">
+                  {[
+                    { key: "tier1", label: "Tier 1: Supplier Specific / Green Energy", sub: "We have specific rates from our utility or Renewable Energy Certificates (Market-Based).", score: 9 },
+                    { key: "tier2", label: "Tier 2: Metered Energy (Utility Bills)", sub: "We know exact kWh/volume from our utility bills (Location-Based).", score: 7 },
+                    { key: "tier3", label: "Tier 3: Estimate by Building Size & Location (New)", sub: "Use this if utilities are included in your rent and you do not have meters. We estimate via your building's footprint and local climate zone.", score: 5 },
+                    { key: "tier4", label: "Tier 4: Spend-Based Estimate", sub: "We only know our financial spend on energy.", score: 2 },
+                  ].map(t => (
+                    <label key={t.key} className={`flex items-start gap-2.5 p-2.5 rounded-lg cursor-pointer transition-all ${form.energy_tier === t.key ? "bg-white border border-blue-300 shadow-sm" : "hover:bg-blue-100/50"}`}>
+                      <input type="radio" name="energy_tier" className="mt-0.5 accent-blue-600" checked={form.energy_tier === t.key} onChange={() => set("energy_tier", t.key)} />
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium text-slate-800">{t.label}</span>
+                          <QualityBadge score={t.score} />
+                        </div>
+                        <span className="text-xs text-slate-500">{t.sub}</span>
+                      </div>
+                    </label>
+                  ))}
                 </div>
-                <div>
-                  <Label className="text-sm font-medium">Unit</Label>
-                  <Select value={form.unit} onValueChange={v => set("unit", v)}>
-                    <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                    <SelectContent>{["kWh", "MWh", "GJ", "L", "m³", "kg"].map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}</SelectContent>
-                  </Select>
-                </div>
               </div>
-              {form.energy_type.startsWith("Electricity") && (
-                <div>
-                  <Label className="text-sm font-medium">Green / Renewable Power %</Label>
-                  <Input type="number" className="mt-1" placeholder="0" min="0" max="100" value={form.green_power_pct} onChange={e => set("green_power_pct", e.target.value)} />
+
+              {/* Tier 1 & 2: Energy type + quantity */}
+              {(form.energy_tier === "tier1" || form.energy_tier === "tier2") && (
+                <div className="space-y-3">
+                  <div>
+                    <Label className="text-sm font-medium">Energy / Fuel Type</Label>
+                    <Select value={form.energy_type} onValueChange={v => set("energy_type", v)}>
+                      <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                      <SelectContent>{Object.entries(ENERGY_FACTORS).map(([k, v]) => <SelectItem key={k} value={k}>{k} — {v} kg/unit</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-sm font-medium">Quantity</Label>
+                      <Input type="number" className="mt-1" placeholder="0" value={form.quantity} onChange={e => set("quantity", e.target.value)} />
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium">Unit</Label>
+                      <Select value={form.unit} onValueChange={v => set("unit", v)}>
+                        <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                        <SelectContent>{["kWh", "MWh", "GJ", "L", "m³", "kg"].map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}</SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  {form.energy_tier === "tier1" && (
+                    <div>
+                      <Label className="text-sm font-medium">Utility Provider</Label>
+                      <Input className="mt-1" placeholder="e.g. AGL, Origin Energy" value={form.utility_provider || ""} onChange={e => set("utility_provider", e.target.value)} />
+                    </div>
+                  )}
+                  {form.energy_type && form.energy_type.startsWith("Electricity") && (
+                    <div>
+                      <Label className="text-sm font-medium">Green / Renewable Power %</Label>
+                      <Input type="number" className="mt-1" placeholder="0" min="0" max="100" value={form.green_power_pct} onChange={e => set("green_power_pct", e.target.value)} />
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Tier 3: Building Intensity */}
+              {form.energy_tier === "tier3" && (
+                <div className="space-y-3 bg-orange-50 border border-orange-200 rounded-xl p-4">
+                  <div className="text-xs font-semibold text-orange-800">Estimate by Building Size & Location (CBPS/NCC Data)</div>
+                  <div>
+                    <Label className="text-sm font-medium">Building Type</Label>
+                    <Select value={form.building_type || "Offices"} onValueChange={v => set("building_type", v)}>
+                      <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {["Offices", "Warehouses", "Health Facilities", "Educational", "Retail", "Hospitality", "Industrial", "Other"].map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-sm font-medium">Total Floor Area (m²)</Label>
+                      <Input type="number" className="mt-1" placeholder="0" value={form.floor_area_sqm || ""} onChange={e => set("floor_area_sqm", e.target.value)} />
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium">NCC Climate Zone</Label>
+                      <Select value={form.ncc_climate_zone || "Zone 5"} onValueChange={v => set("ncc_climate_zone", v)}>
+                        <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {["Zone 1","Zone 2","Zone 3","Zone 4","Zone 5","Zone 6","Zone 7"].map(z => <SelectItem key={z} value={z}>{z}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <p className="text-xs text-orange-600">💡 Emissions estimated using CBPS/NCC building intensity tables × local grid emission factor.</p>
+                </div>
+              )}
+
+              {/* Tier 4: Spend-Based */}
+              {form.energy_tier === "tier4" && (
+                <div className="space-y-3">
+                  <div>
+                    <Label className="text-sm font-medium">Energy Spend Amount</Label>
+                    <Input type="number" className="mt-1" placeholder="0.00" value={form.amount_paid} onChange={e => set("amount_paid", e.target.value)} />
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium">Currency</Label>
+                    <Select value={form.currency} onValueChange={v => set("currency", v)}>
+                      <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                      <SelectContent>{["USD","AUD","EUR","GBP"].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
                 </div>
               )}
             </div>
