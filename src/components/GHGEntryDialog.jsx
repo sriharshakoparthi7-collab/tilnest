@@ -340,6 +340,39 @@ export default function GHGEntryDialog({ open, onClose, onSaved, scope, category
           status: form.status,
         });
       }
+      // Auto-generate Scope 3 Cat 3 (Upstream Energy / WTT) for Scope 2 electricity
+      if (isEnergy && (form.energy_tier === "tier1" || form.energy_tier === "tier2") && form.energy_type?.startsWith("Electricity")) {
+        const kWh = parseFloat(form.quantity) || 0;
+        if (kWh > 0) {
+          // WTT factor for Australian grid electricity ≈ 0.047 kgCO2e/kWh (DEFRA/NGA upstream factor)
+          const WTT_FACTOR = 0.047;
+          const greenAdj = 1 - (parseFloat(form.green_power_pct) || 0) / 100;
+          const wttTco2e = kWh * WTT_FACTOR * greenAdj / 1000;
+          await base44.entities.EmissionEntry.create({
+            scope: "Scope 3",
+            category: "Fuel and Energy-Related Activities",
+            s3_category_number: 3,
+            sub_category: "Well-to-Tank (Upstream Electricity)",
+            source_name: `${form.source_name || "Electricity"} — WTT (auto)`,
+            location_id: form.location_id,
+            location_name: loc?.name || "",
+            supplier: form.utility_provider || "",
+            start_date: form.start_date,
+            end_date: form.end_date,
+            quantity: kWh,
+            unit: "kWh",
+            tco2e: parseFloat(wttTco2e.toFixed(6)),
+            wtt_tco2e: parseFloat(wttTco2e.toFixed(6)),
+            scope3_3_tco2e: parseFloat(wttTco2e.toFixed(6)),
+            calculation_method: `WTT auto: ${kWh} kWh × ${WTT_FACTOR} kgCO₂e/kWh (DEFRA NGA upstream factor)`,
+            data_quality_tier: form.energy_tier,
+            data_quality_score: form.energy_tier === "tier1" ? 9 : 7,
+            reporting_year: 2024,
+            status: form.status,
+            notes: "Auto-generated Scope 3 Category 3 upstream (WTT) record — paired with Scope 2 electricity entry",
+          });
+        }
+      }
     }
     setSaving(false);
     onSaved();
