@@ -441,6 +441,10 @@ export default function EnvironmentPage() {
             <Button size="sm" className="gap-1.5" onClick={() => setShowFranchiseDialog(true)}>
               <Plus className="w-4 h-4" /> Add Franchise Entry
             </Button>
+          ) : categoryKey === "investments" ? (
+            <Button size="sm" className="gap-1.5" onClick={() => setShowInvGateway(true)}>
+              <Plus className="w-4 h-4" /> Add Investment
+            </Button>
           ) : (
             <Button size="sm" className="gap-1.5" onClick={() => openAdd()}>
               <Plus className="w-4 h-4" /> Add {config.title}

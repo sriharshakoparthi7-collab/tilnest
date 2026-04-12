@@ -118,7 +118,9 @@ export default function GHGEntryDialog({ open, onClose, onSaved, scope, category
   const isTravel = category?.includes("Travel") || category?.includes("Business");
   const isCommute = category?.includes("Commut") || category?.includes("Employee");
   const isRefrig = category?.includes("Refrig");
-  const isEnergy = category?.includes("Electr") || category?.includes("Heat") || category?.includes("Stationary") || scope === "Scope 2" || scope === "Scope 1 - Energy";
+  const isHeatSteam = category?.includes("Purchased Heat") || category?.includes("Steam") || category?.includes("Cooling");
+  const isProcess = category?.includes("Process Emissions") || category?.includes("Process");
+  const isEnergy = !isHeatSteam && !isProcess && (category?.includes("Electr") || category?.includes("Heat") || category?.includes("Stationary") || scope === "Scope 2" || scope === "Scope 1 - Energy");
   const isWater = category?.includes("Water");
 
   const [form, setForm] = useState({
@@ -139,6 +141,11 @@ export default function GHGEntryDialog({ open, onClose, onSaved, scope, category
     amount_paid: "", currency: "USD",
     energy_tier: "tier2", is_proxy_bom: false,
     utility_provider: "", building_type: "Offices", floor_area_sqm: "", ncc_climate_zone: "Zone 5",
+    // Heat / Steam / Cooling
+    heat_steam_tier: "tier1", heat_energy_type: "Steam", heat_quantity: "", heat_unit: "GJ",
+    heat_provider_ef: "", heat_floor_area: "",
+    // Process Emissions
+    process_mass: "", process_ef: "", process_material: "",
     ...defaultValues
   });
 
@@ -221,6 +228,30 @@ export default function GHGEntryDialog({ open, onClose, onSaved, scope, category
     result.method = "Water treatment factor · NGA";
     result.categorySplit = { "Scope 3 Water": result.tco2e.toFixed(4) };
     result.audit = ["Australian NGA Factors", "Water Services Association"];
+  } else if (isHeatSteam) {
+    const HEAT_EF = { "Steam": 0.268, "Heat (District)": 0.210, "Chilled Water": 0.132 };
+    if (form.heat_steam_tier === "tier1") {
+      const ef = parseFloat(form.heat_provider_ef) || HEAT_EF[form.heat_energy_type] || 0.268;
+      result.tco2e = (parseFloat(form.heat_quantity) || 0) * ef / 1000;
+      result.score = 9;
+      result.method = `Provider-specific · ${form.heat_energy_type} · ${ef} kgCO₂e/GJ`;
+    } else {
+      const intensityMap = { "Offices": 185, "Warehouses": 85, "Health Facilities": 380, "Educational": 120, "Retail": 210, "Other": 150 };
+      const intensity = intensityMap[form.building_type] || 150;
+      const estGj = (parseFloat(form.heat_floor_area) || 0) * intensity * 0.0036;
+      const ef = HEAT_EF[form.heat_energy_type] || 0.268;
+      result.tco2e = estGj * ef / 1000;
+      result.score = 5;
+      result.method = `Building intensity estimate · ${form.building_type} · ${intensity} kWh/m²`;
+    }
+    result.categorySplit = { ["Scope 2"]: result.tco2e.toFixed(4) };
+    result.audit = ["IEA District Energy Factors", "GHG Protocol Scope 2 Guidance", "CBPS/NCC Intensity Tables"];
+  } else if (isProcess) {
+    result.tco2e = (parseFloat(form.process_mass) || 0) * (parseFloat(form.process_ef) || 0);
+    result.score = 9;
+    result.method = `Stoichiometric: ${form.process_mass || 0} t × ${form.process_ef || 0} tCO₂e/t`;
+    result.categorySplit = { "Scope 1 Process": result.tco2e.toFixed(4) };
+    result.audit = ["IPCC AR6 Stoichiometric Factors", "GHG Protocol Scope 1", "NGER Act 2007"];
   }
 
   const save = async () => {
@@ -247,6 +278,23 @@ export default function GHGEntryDialog({ open, onClose, onSaved, scope, category
       green_power_pct: parseFloat(form.green_power_pct) || undefined,
       reporting_year: 2024,
     };
+    if (isHeatSteam) {
+      data.scope = "Scope 2";
+      data.category = category || "Purchased Heat & Steam";
+      data.energy_type = form.heat_energy_type;
+      data.quantity = parseFloat(form.heat_quantity) || undefined;
+      data.unit = form.heat_unit;
+      data.provider_emission_factor = parseFloat(form.heat_provider_ef) || undefined;
+      data.facility_sqft = form.heat_steam_tier === "tier2" ? parseFloat(form.heat_floor_area) || undefined : undefined;
+      data.building_type = form.building_type;
+      data.data_quality_tier = form.heat_steam_tier;
+    } else if (isProcess) {
+      data.scope = "Scope 1";
+      data.category = "Process Emissions";
+      data.quantity = parseFloat(form.process_mass) || undefined;
+      data.unit = "tonnes";
+      data.emission_factor = parseFloat(form.process_ef) || undefined;
+    }
     if (defaultValues.id) await base44.entities.EmissionEntry.update(defaultValues.id, data);
     else await base44.entities.EmissionEntry.create(data);
     setSaving(false);
@@ -260,7 +308,9 @@ export default function GHGEntryDialog({ open, onClose, onSaved, scope, category
     ((form.energy_tier || "tier2") === "tier3" ? form.floor_area_sqm : null) ||
     ((form.energy_tier || "tier2") === "tier4" && isEnergy ? form.amount_paid : null) ||
     form.quantity || form.travel_distance_km || form.water_m3 || form.refrigerant_kg ||
-    form.waste_quantity_kg || form.spend || form.material_mass_kg || form.commute_days || 0
+    form.waste_quantity_kg || form.spend || form.material_mass_kg || form.commute_days ||
+    form.heat_quantity || form.heat_floor_area ||
+    form.process_mass || 0
   );
 
   return (
@@ -758,6 +808,115 @@ export default function GHGEntryDialog({ open, onClose, onSaved, scope, category
               <div>
                 <Label className="text-sm font-medium">Quantity leaked / charged (kg)</Label>
                 <Input type="number" className="mt-1" placeholder="0" value={form.refrigerant_kg} onChange={e => set("refrigerant_kg", e.target.value)} />
+              </div>
+            </div>
+          )}
+
+          {/* ── PURCHASED HEAT / STEAM / COOLING ── */}
+          {isHeatSteam && (
+            <div className="space-y-4">
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                <div className="text-xs font-semibold text-blue-800 mb-1">Scope 2 — Purchased Heat, Steam or Cooling</div>
+                <p className="text-xs text-blue-700">Emissions from district heating, steam or chilled water networks. No Scope 3.3 is triggered for this sub-activity by default.</p>
+              </div>
+              <div>
+                <Label className="text-sm font-medium">Energy Type</Label>
+                <Select value={form.heat_energy_type} onValueChange={v => set("heat_energy_type", v)}>
+                  <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                  <SelectContent>{["Steam", "Heat (District)", "Chilled Water"].map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-2">
+                <div className="text-xs font-semibold text-blue-800 mb-2">Data Quality Tier</div>
+                {[
+                  { key: "tier1", label: "Tier 1: Specific Provider Data (Gold)", sub: "We have exact metered consumption and a specific emission factor from the district network provider.", score: 9 },
+                  { key: "tier2", label: "Tier 2: Estimated via Building Size (Silver)", sub: "We estimate consumption using our floor area and industry intensity averages.", score: 5 },
+                ].map(t => (
+                  <label key={t.key} className={`flex items-start gap-2.5 p-2.5 rounded-lg cursor-pointer transition-all ${form.heat_steam_tier === t.key ? "bg-white border border-blue-300 shadow-sm" : "hover:bg-blue-100/50"}`}>
+                    <input type="radio" name="heat_tier" className="mt-0.5 accent-blue-600" checked={form.heat_steam_tier === t.key} onChange={() => set("heat_steam_tier", t.key)} />
+                    <div><div className="text-sm font-medium text-slate-800">{t.label}</div><div className="text-xs text-slate-500">{t.sub}</div></div>
+                  </label>
+                ))}
+              </div>
+              {form.heat_steam_tier === "tier1" && (
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-sm font-medium">Quantity Consumed</Label>
+                      <Input type="number" className="mt-1" placeholder="0" value={form.heat_quantity} onChange={e => set("heat_quantity", e.target.value)} />
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium">Unit</Label>
+                      <Select value={form.heat_unit} onValueChange={v => set("heat_unit", v)}>
+                        <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                        <SelectContent>{["GJ", "MWh", "kWh", "t (steam)"].map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}</SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium">Provider Emission Factor (kgCO₂e/GJ)</Label>
+                    <Input type="number" className="mt-1" placeholder="e.g. 268" value={form.heat_provider_ef} onChange={e => set("heat_provider_ef", e.target.value)} />
+                    <p className="text-xs text-slate-400 mt-1">Found in your district provider's annual sustainability report. Defaults: Steam 268, Heat 210, Chilled Water 132.</p>
+                  </div>
+                </div>
+              )}
+              {form.heat_steam_tier === "tier2" && (
+                <div className="space-y-3">
+                  <div>
+                    <Label className="text-sm font-medium">Building Type</Label>
+                    <Select value={form.building_type} onValueChange={v => set("building_type", v)}>
+                      <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                      <SelectContent>{["Offices", "Warehouses", "Health Facilities", "Educational", "Retail", "Other"].map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium">Total Floor Area (m²)</Label>
+                    <Input type="number" className="mt-1" placeholder="0" value={form.heat_floor_area} onChange={e => set("heat_floor_area", e.target.value)} />
+                  </div>
+                  <p className="text-xs text-slate-400">💡 Estimates energy intensity via CBPS/NCC building type benchmarks × default district heating factor.</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── PROCESS EMISSIONS ── */}
+          {isProcess && (
+            <div className="space-y-4">
+              <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+                <div className="text-xs font-semibold text-red-800 mb-1">Scope 1 — Industrial Process Emissions</div>
+                <p className="text-xs text-red-700">Emissions from chemical reactions, not fuel combustion (e.g., cement clinker calcination, lime production). Calculated via stoichiometric mass-balance methodology.</p>
+              </div>
+              <div>
+                <Label className="text-sm font-medium">Material / Process Type</Label>
+                <Select value={form.process_material || "Limestone Calcination"} onValueChange={v => set("process_material", v)}>
+                  <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {[
+                      "Limestone Calcination (CaCO₃ → CaO)",
+                      "Cement Clinker Production",
+                      "Lime Production (Quicklime)",
+                      "Soda Ash Production",
+                      "Aluminium Smelting (Anode Effect)",
+                      "Iron & Steel Production (Coking Coal)",
+                      "Chemical Production (Custom)",
+                      "Other Industrial Process",
+                    ].map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-sm font-medium">Mass of Material Processed (Tonnes)</Label>
+                  <Input type="number" className="mt-1" placeholder="0" value={form.process_mass} onChange={e => set("process_mass", e.target.value)} />
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">Stoichiometric Emission Factor (tCO₂e / tonne)</Label>
+                  <Input type="number" className="mt-1" placeholder="e.g. 0.44 for limestone" value={form.process_ef} onChange={e => set("process_ef", e.target.value)} />
+                </div>
+              </div>
+              <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 text-xs text-slate-600">
+                Common factors: Limestone 0.44 | Cement clinker 0.52 | Quicklime 0.75 | Soda ash 0.41
+                <div className="text-slate-400 mt-1">Source: IPCC AR6 · NGER Act 2007 Measurement Determination</div>
               </div>
             </div>
           )}
