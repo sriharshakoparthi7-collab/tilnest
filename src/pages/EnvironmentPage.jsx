@@ -8,10 +8,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import GHGEntryDialog from "../components/GHGEntryDialog";
 import ProductClassificationGateway from "../components/ProductClassificationGateway";
 import SoldProductsDialog from "../components/SoldProductsDialog";
-import InvestmentsDialog from "../components/InvestmentsDialog";
 import InvestmentsGateway from "../components/InvestmentsGateway";
+import InvestmentsPCAFDialog from "../components/InvestmentsPCAFDialog";
 import BusinessTravelDialog from "../components/BusinessTravelDialog";
 import RefrigerantsTieredDialog from "../components/RefrigerantsTieredDialog";
+import TransportationTieredDialog from "../components/TransportationTieredDialog";
+import LeasedAssetsTieredDialog from "../components/LeasedAssetsTieredDialog";
+import WasteReuseTieredDialog from "../components/WasteReuseTieredDialog";
+import EmployeeCommutingDialog from "../components/EmployeeCommutingDialog";
+import FranchisesDialog from "../components/FranchisesDialog";
 import BulkUploadModal from "../components/BulkUploadModal";
 import EmissionsTable from "../components/EmissionsTable";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, LineChart, Line, XAxis, YAxis, CartesianGrid, Legend } from "recharts";
@@ -301,6 +306,13 @@ export default function EnvironmentPage() {
   const [showTravelDialog, setShowTravelDialog] = useState(false);
   const [travelSubCategory, setTravelSubCategory] = useState("Air Travel");
   const [showRefrigDialog, setShowRefrigDialog] = useState(false);
+  const [showTransportDialog, setShowTransportDialog] = useState(false);
+  const [transportDirection, setTransportDirection] = useState("Upstream");
+  const [showLeasedDialog, setShowLeasedDialog] = useState(false);
+  const [leasedType, setLeasedType] = useState("Upstream");
+  const [showWasteDialog, setShowWasteDialog] = useState(false);
+  const [showCommuteDialog, setShowCommuteDialog] = useState(false);
+  const [showFranchiseDialog, setShowFranchiseDialog] = useState(false);
 
   const openAdd = (overrides = {}) => {
     setEditEntry(null);
@@ -393,19 +405,19 @@ export default function EnvironmentPage() {
             </div>
           ) : categoryKey === "transportation" ? (
             <div className="flex items-center gap-2">
-              <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={() => openAdd({ scope: "Scope 3", category: "Upstream Transportation & Distribution" })}>
+              <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={() => { setTransportDirection("Upstream"); setShowTransportDialog(true); }}>
                 <Plus className="w-3.5 h-3.5" /> Upstream (Cat 4)
               </Button>
-              <Button size="sm" className="gap-1.5 text-xs" onClick={() => openAdd({ scope: "Scope 3", category: "Downstream Transportation & Distribution" })}>
+              <Button size="sm" className="gap-1.5 text-xs" onClick={() => { setTransportDirection("Downstream"); setShowTransportDialog(true); }}>
                 <Plus className="w-3.5 h-3.5" /> Downstream (Cat 9)
               </Button>
             </div>
           ) : categoryKey === "leased-assets" ? (
             <div className="flex items-center gap-2">
-              <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={() => openAdd({ scope: "Scope 3", category: "Upstream Leased Assets" })}>
+              <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={() => { setLeasedType("Upstream"); setShowLeasedDialog(true); }}>
                 <Plus className="w-3.5 h-3.5" /> Upstream (Cat 8)
               </Button>
-              <Button size="sm" className="gap-1.5 text-xs" onClick={() => openAdd({ scope: "Scope 3", category: "Downstream Leased Assets" })}>
+              <Button size="sm" className="gap-1.5 text-xs" onClick={() => { setLeasedType("Downstream"); setShowLeasedDialog(true); }}>
                 <Plus className="w-3.5 h-3.5" /> Downstream (Cat 13)
               </Button>
             </div>
@@ -417,9 +429,17 @@ export default function EnvironmentPage() {
             <Button size="sm" className="gap-1.5" onClick={() => setShowRefrigDialog(true)}>
               <Plus className="w-4 h-4" /> Add Refrigerant Entry
             </Button>
-          ) : categoryKey === "investments" ? (
-            <Button size="sm" className="gap-1.5" onClick={() => setShowInvGateway(true)}>
-              <Plus className="w-4 h-4" /> Add Investment
+          ) : categoryKey === "waste" ? (
+            <Button size="sm" className="gap-1.5" onClick={() => setShowWasteDialog(true)}>
+              <Plus className="w-4 h-4" /> Add Waste Entry
+            </Button>
+          ) : categoryKey === "employees" ? (
+            <Button size="sm" className="gap-1.5" onClick={() => setShowCommuteDialog(true)}>
+              <Plus className="w-4 h-4" /> Add Commuting Entry
+            </Button>
+          ) : categoryKey === "franchises" ? (
+            <Button size="sm" className="gap-1.5" onClick={() => setShowFranchiseDialog(true)}>
+              <Plus className="w-4 h-4" /> Add Franchise Entry
             </Button>
           ) : (
             <Button size="sm" className="gap-1.5" onClick={() => openAdd()}>
@@ -592,11 +612,42 @@ export default function EnvironmentPage() {
         onControlledAsset={load}
       />
 
-      <InvestmentsDialog
+      <InvestmentsPCAFDialog
         open={showInvestments}
         onClose={() => { setShowInvestments(false); setEditInvestment(null); }}
         onSaved={load}
-        defaultValues={editInvestment || {}}
+      />
+
+      <TransportationTieredDialog
+        open={showTransportDialog}
+        onClose={() => setShowTransportDialog(false)}
+        onSaved={load}
+        direction={transportDirection}
+      />
+
+      <LeasedAssetsTieredDialog
+        open={showLeasedDialog}
+        onClose={() => setShowLeasedDialog(false)}
+        onSaved={load}
+        leaseType={leasedType}
+      />
+
+      <WasteReuseTieredDialog
+        open={showWasteDialog}
+        onClose={() => setShowWasteDialog(false)}
+        onSaved={load}
+      />
+
+      <EmployeeCommutingDialog
+        open={showCommuteDialog}
+        onClose={() => setShowCommuteDialog(false)}
+        onSaved={load}
+      />
+
+      <FranchisesDialog
+        open={showFranchiseDialog}
+        onClose={() => setShowFranchiseDialog(false)}
+        onSaved={load}
       />
 
       <BusinessTravelDialog
