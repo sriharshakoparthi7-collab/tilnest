@@ -55,7 +55,7 @@ function deriveCategories(answers) {
   return cats;
 }
 
-export default function ProductClassificationGateway({ open, onClose, onAddEntry }) {
+export default function ProductClassificationGateway({ open, onClose, onAddEntry, onProceedWithCategories }) {
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState({});
   const [done, setDone] = useState(false);
@@ -148,12 +148,17 @@ export default function ProductClassificationGateway({ open, onClose, onAddEntry
                           <div className="text-xs opacity-70 mt-0.5">{cat.scope}</div>
                         </div>
                         <Button size="sm" variant="outline" className="text-xs gap-1"
-                          onClick={() => onAddEntry(cat.scope, cat.category)}>
+                          onClick={() => onAddEntry ? onAddEntry(cat.scope, cat.category) : null}>
                           <Plus className="w-3 h-3" /> Add Entry
                         </Button>
                       </div>
                     </div>
                   ))}
+                  {onProceedWithCategories && (
+                    <Button className="w-full gap-1.5" onClick={() => onProceedWithCategories(categories)}>
+                      <Plus className="w-4 h-4" /> Enter All Data Together
+                    </Button>
+                  )}
                 </div>
               )}
 

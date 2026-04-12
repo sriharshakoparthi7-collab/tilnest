@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import GHGEntryDialog from "../components/GHGEntryDialog";
 import ProductClassificationGateway from "../components/ProductClassificationGateway";
+import SoldProductsDialog from "../components/SoldProductsDialog";
+import InvestmentsDialog from "../components/InvestmentsDialog";
 import BulkUploadModal from "../components/BulkUploadModal";
 import EmissionsTable from "../components/EmissionsTable";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, LineChart, Line, XAxis, YAxis, CartesianGrid, Legend } from "recharts";
@@ -286,7 +288,10 @@ export default function EnvironmentPage() {
   const [locations, setLocations] = useState([]);
   const [fy, setFy] = useState("FY2024");
   const [showBulk, setShowBulk] = useState(false);
-  const [dialogProps, setDialogProps] = useState({});
+  const [showSoldProducts, setShowSoldProducts] = useState(false);
+  const [soldProductsCategories, setSoldProductsCategories] = useState([]);
+  const [showInvestments, setShowInvestments] = useState(false);
+  const [editInvestment, setEditInvestment] = useState(null);
   const [showGateway, setShowGateway] = useState(false);
 
   const openAdd = (overrides = {}) => {
@@ -399,6 +404,10 @@ export default function EnvironmentPage() {
           ) : categoryKey === "sold-products" ? (
             <Button size="sm" className="gap-1.5" onClick={() => setShowGateway(true)}>
               <Plus className="w-4 h-4" /> Add Product
+            </Button>
+          ) : categoryKey === "investments" ? (
+            <Button size="sm" className="gap-1.5" onClick={() => setShowInvestments(true)}>
+              <Plus className="w-4 h-4" /> Add Investment
             </Button>
           ) : (
             <Button size="sm" className="gap-1.5" onClick={() => openAdd()}>
@@ -550,6 +559,25 @@ export default function EnvironmentPage() {
           setShowGateway(false);
           openAdd({ scope, category });
         }}
+        onProceedWithCategories={(cats) => {
+          setShowGateway(false);
+          setSoldProductsCategories(cats);
+          setShowSoldProducts(true);
+        }}
+      />
+
+      <SoldProductsDialog
+        open={showSoldProducts}
+        onClose={() => { setShowSoldProducts(false); setSoldProductsCategories([]); }}
+        onSaved={load}
+        triggeredCategories={soldProductsCategories}
+      />
+
+      <InvestmentsDialog
+        open={showInvestments}
+        onClose={() => { setShowInvestments(false); setEditInvestment(null); }}
+        onSaved={load}
+        defaultValues={editInvestment || {}}
       />
 
       <GHGEntryDialog

@@ -78,6 +78,10 @@
       "type": "number",
       "title": "Emissions (tCO2e)"
     },
+    "scope3_cat3_tco2e": {
+      "type": "number",
+      "title": "Scope 3 Cat 3 WTT (tCO2e)"
+    },
     "calculation_method": {
       "type": "string",
       "title": "Calculation Method",
@@ -87,6 +91,20 @@
         "Spend-Based",
         "Distance-Based"
       ]
+    },
+    "data_quality_tier": {
+      "type": "string",
+      "title": "Data Quality Tier",
+      "enum": [
+        "tier1",
+        "tier2",
+        "tier3",
+        "tier4"
+      ]
+    },
+    "data_quality_score": {
+      "type": "number",
+      "title": "Data Quality Score (1-10)"
     },
     "notes": {
       "type": "string",
@@ -128,6 +146,336 @@
     "upload_file_url": {
       "type": "string",
       "title": "Uploaded File URL"
+    },
+    "quantity_purchased": {
+      "type": "number",
+      "title": "Quantity Purchased"
+    },
+    "unit_of_measure": {
+      "type": "string",
+      "title": "Unit of Measure"
+    },
+    "supplier_emission_factor": {
+      "type": "number",
+      "title": "Supplier Emission Factor (kgCO2e/unit)"
+    },
+    "pcf_epd_document_url": {
+      "type": "string",
+      "title": "PCF/EPD Document URL"
+    },
+    "certificate_expiry_date": {
+      "type": "string",
+      "format": "date",
+      "title": "Certificate Expiry Date"
+    },
+    "system_boundary": {
+      "type": "string",
+      "title": "System Boundary",
+      "enum": [
+        "Cradle-to-Gate",
+        "Cradle-to-Grave",
+        "Gate-to-Gate"
+      ]
+    },
+    "supplier_total_energy_emissions": {
+      "type": "number",
+      "title": "Supplier Scope 1+2 Emissions (kgCO2e)"
+    },
+    "allocation_percentage": {
+      "type": "number",
+      "title": "Allocation Percentage (%)"
+    },
+    "allocation_method": {
+      "type": "string",
+      "title": "Allocation Method",
+      "enum": [
+        "Mass-Based",
+        "Top-Down Time",
+        "Bottom-Up Machine Energy",
+        "Economic Allocation"
+      ]
+    },
+    "machine_hours": {
+      "type": "number",
+      "title": "Machine Hours"
+    },
+    "machine_kw_rating": {
+      "type": "number",
+      "title": "Machine kW Rating"
+    },
+    "local_grid_factor": {
+      "type": "number",
+      "title": "Local Grid Factor (kgCO2e/kWh)"
+    },
+    "bom_line_items": {
+      "type": "string",
+      "title": "BOM Line Items (JSON)"
+    },
+    "is_proxy_bom": {
+      "type": "boolean",
+      "title": "Is Proxy BOM"
+    },
+    "tier3_method": {
+      "type": "string",
+      "title": "Tier 3 Method",
+      "enum": [
+        "Product-Level",
+        "BOM-Level"
+      ]
+    },
+    "product_emission_factor": {
+      "type": "number",
+      "title": "Product Emission Factor (kgCO2e/unit)"
+    },
+    "generic_processing_factor": {
+      "type": "number",
+      "title": "Generic Processing Factor"
+    },
+    "spend_year": {
+      "type": "number",
+      "title": "Spend Year"
+    },
+    "eeio_sector_code": {
+      "type": "string",
+      "title": "EEIO Sector Code"
+    },
+    "inflation_adjustment_rate": {
+      "type": "number",
+      "title": "Inflation Adjustment Rate (%)"
+    },
+    "incoterm": {
+      "type": "string",
+      "title": "Incoterm",
+      "enum": [
+        "DDP",
+        "EXW",
+        "FOB"
+      ]
+    },
+    "origin_address": {
+      "type": "string",
+      "title": "Origin Address"
+    },
+    "destination_address": {
+      "type": "string",
+      "title": "Destination Address"
+    },
+    "port_of_loading": {
+      "type": "string",
+      "title": "Port of Loading"
+    },
+    "shipment_weight_kg": {
+      "type": "number",
+      "title": "Shipment Weight (kg)"
+    },
+    "transport_mode": {
+      "type": "string",
+      "title": "Transport Mode",
+      "enum": [
+        "Road (Truck)",
+        "Rail",
+        "Sea (Container)",
+        "Air"
+      ]
+    },
+    "transport_distance_km": {
+      "type": "number",
+      "title": "Transport Distance (km)"
+    },
+    "tonne_km": {
+      "type": "number",
+      "title": "Tonne-Kilometres"
+    },
+    "cat4_tco2e": {
+      "type": "number",
+      "title": "Cat 4 Transport Emissions (tCO2e)"
+    },
+    "utility_provider_name": {
+      "type": "string",
+      "title": "Utility Provider Name"
+    },
+    "supplier_market_factor": {
+      "type": "number",
+      "title": "Supplier Market-Based Factor (kgCO2e/kWh)"
+    },
+    "eac_certificate_url": {
+      "type": "string",
+      "title": "EAC/REC Certificate URL"
+    },
+    "financial_spend": {
+      "type": "number",
+      "title": "Financial Spend"
+    },
+    "facility_sqft": {
+      "type": "number",
+      "title": "Facility Size (sq ft)"
+    },
+    "building_type": {
+      "type": "string",
+      "title": "Building Type"
+    },
+    "ncc_climate_zone": {
+      "type": "string",
+      "title": "NCC Climate Zone"
+    },
+    "energy_type": {
+      "type": "string",
+      "title": "Energy Type"
+    },
+    "provider_emission_factor": {
+      "type": "number",
+      "title": "Provider Emission Factor"
+    },
+    "vehicle_id": {
+      "type": "string",
+      "title": "Vehicle ID"
+    },
+    "vehicle_class": {
+      "type": "string",
+      "title": "Vehicle Class"
+    },
+    "fuel_volume": {
+      "type": "number",
+      "title": "Fuel Volume"
+    },
+    "fuel_volume_unit": {
+      "type": "string",
+      "title": "Fuel Volume Unit"
+    },
+    "distance_traveled": {
+      "type": "number",
+      "title": "Distance Traveled"
+    },
+    "distance_unit": {
+      "type": "string",
+      "title": "Distance Unit",
+      "enum": [
+        "km",
+        "miles"
+      ]
+    },
+    "wtt_tco2e": {
+      "type": "number",
+      "title": "Well-to-Tank Emissions (tCO2e)"
+    },
+    "product_name": {
+      "type": "string",
+      "title": "Product Name"
+    },
+    "units_sold": {
+      "type": "number",
+      "title": "Units Sold"
+    },
+    "product_weight_kg": {
+      "type": "number",
+      "title": "Product Weight per Unit (kg)"
+    },
+    "use_phase_years": {
+      "type": "number",
+      "title": "Expected Use Phase (years)"
+    },
+    "annual_energy_kwh": {
+      "type": "number",
+      "title": "Annual Energy Use (kWh/unit)"
+    },
+    "annual_fuel_litres": {
+      "type": "number",
+      "title": "Annual Fuel Use (L/unit)"
+    },
+    "gwp_gas_type": {
+      "type": "string",
+      "title": "GWP Gas Type (for fugitive products)"
+    },
+    "gwp_leakage_kg": {
+      "type": "number",
+      "title": "Annual GWP Leakage (kg/unit)"
+    },
+    "eol_waste_kg": {
+      "type": "number",
+      "title": "End-of-Life Waste Weight (kg/unit)"
+    },
+    "eol_disposal_method": {
+      "type": "string",
+      "title": "End-of-Life Disposal Method"
+    },
+    "cat10_tco2e": {
+      "type": "number",
+      "title": "Cat 10 Emissions (tCO2e)"
+    },
+    "cat11_tco2e": {
+      "type": "number",
+      "title": "Cat 11 Emissions (tCO2e)"
+    },
+    "cat12_tco2e": {
+      "type": "number",
+      "title": "Cat 12 Emissions (tCO2e)"
+    },
+    "investment_type": {
+      "type": "string",
+      "title": "Investment Type",
+      "enum": [
+        "Equity",
+        "Debt (Corporate Bond)",
+        "Debt (Project Finance)",
+        "Managed Portfolio",
+        "Insurance (Underwriting)"
+      ]
+    },
+    "investee_company": {
+      "type": "string",
+      "title": "Investee Company"
+    },
+    "investee_sector": {
+      "type": "string",
+      "title": "Investee Sector"
+    },
+    "investee_country": {
+      "type": "string",
+      "title": "Investee Country"
+    },
+    "investment_value_usd": {
+      "type": "number",
+      "title": "Investment Value (USD)"
+    },
+    "total_equity_usd": {
+      "type": "number",
+      "title": "Total Equity of Investee (USD)"
+    },
+    "total_debt_usd": {
+      "type": "number",
+      "title": "Total Debt of Investee (USD)"
+    },
+    "investee_revenue_usd": {
+      "type": "number",
+      "title": "Investee Revenue (USD)"
+    },
+    "investee_s1s2_tco2e": {
+      "type": "number",
+      "title": "Investee Scope 1+2 (tCO2e)"
+    },
+    "investee_s3_tco2e": {
+      "type": "number",
+      "title": "Investee Scope 3 (tCO2e)"
+    },
+    "attribution_factor": {
+      "type": "number",
+      "title": "Attribution Factor (%)"
+    },
+    "pcaf_data_quality": {
+      "type": "number",
+      "title": "PCAF Data Quality Score (1-5)"
+    },
+    "insurance_premium_usd": {
+      "type": "number",
+      "title": "Insurance Premium Written (USD)"
+    },
+    "total_premium_portfolio_usd": {
+      "type": "number",
+      "title": "Total Premium Portfolio (USD)"
+    },
+    "financed_tco2e": {
+      "type": "number",
+      "title": "Financed Emissions (tCO2e)"
     }
   },
   "required": [
