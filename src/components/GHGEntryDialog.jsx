@@ -143,9 +143,12 @@ export default function GHGEntryDialog({ open, onClose, onSaved, scope, category
     utility_provider: "", building_type: "Offices", floor_area_sqm: "", ncc_climate_zone: "Zone 5",
     // Heat / Steam / Cooling
     heat_steam_tier: "tier1", heat_energy_type: "Steam", heat_quantity: "", heat_unit: "GJ",
-    heat_provider_ef: "", heat_floor_area: "",
+    heat_provider_ef: "", heat_floor_area: "", heat_provider_doc_url: "",
     // Process Emissions
     process_mass: "", process_ef: "", process_material: "",
+    // Audit URL fields
+    eac_certificate_url: "", utility_invoice_url: "",
+    origin_address: "", destination_address: "", port_of_loading: "",
     ...defaultValues
   });
 
@@ -285,6 +288,7 @@ export default function GHGEntryDialog({ open, onClose, onSaved, scope, category
       data.quantity = parseFloat(form.heat_quantity) || undefined;
       data.unit = form.heat_unit;
       data.provider_emission_factor = parseFloat(form.heat_provider_ef) || undefined;
+      data.provider_document_url = form.heat_provider_doc_url || undefined;
       data.facility_sqft = form.heat_steam_tier === "tier2" ? parseFloat(form.heat_floor_area) || undefined : undefined;
       data.building_type = form.building_type;
       data.data_quality_tier = form.heat_steam_tier;
@@ -295,6 +299,12 @@ export default function GHGEntryDialog({ open, onClose, onSaved, scope, category
       data.unit = "tonnes";
       data.emission_factor = parseFloat(form.process_ef) || undefined;
     }
+    // Add audit URL fields to all records
+    if (form.eac_certificate_url) data.eac_certificate_url = form.eac_certificate_url;
+    if (form.utility_invoice_url) data.utility_invoice_url = form.utility_invoice_url;
+    if (form.origin_address) data.origin_address = form.origin_address;
+    if (form.port_of_loading) data.port_of_loading = form.port_of_loading;
+    if (form.destination_address) data.destination_address = form.destination_address;
     if (defaultValues.id) await base44.entities.EmissionEntry.update(defaultValues.id, data);
     else await base44.entities.EmissionEntry.create(data);
     setSaving(false);
@@ -569,21 +579,33 @@ export default function GHGEntryDialog({ open, onClose, onSaved, scope, category
                   </Select>
                 </div>
                 {form.transport_incoterm !== "DDP" && (
-                  <div className="grid grid-cols-3 gap-2">
-                    <div>
-                      <Label className="text-xs">Weight (kg)</Label>
-                      <Input type="number" className="mt-1 h-8 text-xs" placeholder="0" value={form.transport_kg} onChange={e => set("transport_kg", e.target.value)} />
+                  <div className="space-y-2">
+                    <div className="grid grid-cols-3 gap-2">
+                      <div>
+                        <Label className="text-xs">Weight (kg)</Label>
+                        <Input type="number" className="mt-1 h-8 text-xs" placeholder="0" value={form.transport_kg} onChange={e => set("transport_kg", e.target.value)} />
+                      </div>
+                      <div>
+                        <Label className="text-xs">Distance (km)</Label>
+                        <Input type="number" className="mt-1 h-8 text-xs" placeholder="0" value={form.transport_distance} onChange={e => set("transport_distance", e.target.value)} />
+                      </div>
+                      <div>
+                        <Label className="text-xs">Mode</Label>
+                        <Select value={form.transport_mode} onValueChange={v => set("transport_mode", v)}>
+                          <SelectTrigger className="mt-1 h-8 text-xs"><SelectValue /></SelectTrigger>
+                          <SelectContent>{Object.keys(TRANSPORT_MODE_FACTORS).map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
+                        </Select>
+                      </div>
                     </div>
-                    <div>
-                      <Label className="text-xs">Distance (km)</Label>
-                      <Input type="number" className="mt-1 h-8 text-xs" placeholder="0" value={form.transport_distance} onChange={e => set("transport_distance", e.target.value)} />
-                    </div>
-                    <div>
-                      <Label className="text-xs">Mode</Label>
-                      <Select value={form.transport_mode} onValueChange={v => set("transport_mode", v)}>
-                        <SelectTrigger className="mt-1 h-8 text-xs"><SelectValue /></SelectTrigger>
-                        <SelectContent>{Object.keys(TRANSPORT_MODE_FACTORS).map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
-                      </Select>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <Label className="text-xs">Origin Address</Label>
+                        <Input className="mt-1 h-8 text-xs" placeholder="Supplier city / address" value={form.origin_address} onChange={e => set("origin_address", e.target.value)} />
+                      </div>
+                      <div>
+                        <Label className="text-xs">{form.transport_incoterm === "FOB" ? "Port of Loading" : "Destination Address"}</Label>
+                        <Input className="mt-1 h-8 text-xs" placeholder={form.transport_incoterm === "FOB" ? "e.g. Port of Sydney" : "Your facility"} value={form.transport_incoterm === "FOB" ? form.port_of_loading : form.destination_address} onChange={e => set(form.transport_incoterm === "FOB" ? "port_of_loading" : "destination_address", e.target.value)} />
+                      </div>
                     </div>
                   </div>
                 )}
@@ -698,6 +720,18 @@ export default function GHGEntryDialog({ open, onClose, onSaved, scope, category
                     <div>
                       <Label className="text-sm font-medium">Utility Provider</Label>
                       <Input className="mt-1" placeholder="e.g. AGL, Origin Energy" value={form.utility_provider || ""} onChange={e => set("utility_provider", e.target.value)} />
+                    </div>
+                  )}
+                  {form.energy_tier === "tier1" && form.energy_type?.startsWith("Electricity") && (
+                    <div>
+                      <Label className="text-sm font-medium">EAC / REC Certificate URL (optional)</Label>
+                      <Input className="mt-1" placeholder="https://... (proof of green certificate)" value={form.eac_certificate_url} onChange={e => set("eac_certificate_url", e.target.value)} />
+                    </div>
+                  )}
+                  {(form.energy_tier === "tier1" || form.energy_tier === "tier2") && (
+                    <div>
+                      <Label className="text-sm font-medium">Utility Invoice URL (optional)</Label>
+                      <Input className="mt-1" placeholder="https://... (upload proof for audit)" value={form.utility_invoice_url} onChange={e => set("utility_invoice_url", e.target.value)} />
                     </div>
                   )}
                   {form.energy_type && form.energy_type.startsWith("Electricity") && (
@@ -857,6 +891,10 @@ export default function GHGEntryDialog({ open, onClose, onSaved, scope, category
                     <Label className="text-sm font-medium">Provider Emission Factor (kgCO₂e/GJ)</Label>
                     <Input type="number" className="mt-1" placeholder="e.g. 268" value={form.heat_provider_ef} onChange={e => set("heat_provider_ef", e.target.value)} />
                     <p className="text-xs text-slate-400 mt-1">Found in your district provider's annual sustainability report. Defaults: Steam 268, Heat 210, Chilled Water 132.</p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium">Provider Report / Document URL (optional)</Label>
+                    <Input className="mt-1" placeholder="https://... (audit evidence)" value={form.heat_provider_doc_url} onChange={e => set("heat_provider_doc_url", e.target.value)} />
                   </div>
                 </div>
               )}
