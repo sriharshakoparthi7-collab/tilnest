@@ -6,21 +6,29 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-// ─── Emission Factors ───────────────────────────────────────────────────────
-const SECTOR_FACTORS = {
-  "Manufacturing - General": 0.45,
-  "Manufacturing - Metal": 1.85,
-  "Manufacturing - Plastic": 2.53,
-  "Manufacturing - Electronics": 1.20,
-  "Professional Services": 0.18,
-  "Construction": 0.72,
-  "Food & Beverage": 0.55,
-  "Chemicals": 1.65,
-  "Textiles": 0.98,
-  "Other": 0.35,
+// ─── Postcode → NCC Climate Zone mapping (AU) ─────────────────────────────
+const postcodeToNCCZone = (postcode) => {
+  const pc = parseInt(postcode);
+  if (!pc) return null;
+  if ((pc >= 800 && pc <= 821) || (pc >= 4870 && pc <= 4895)) return "Zone 1";
+  if ((pc >= 822 && pc <= 851) || (pc >= 4800 && pc <= 4869) || (pc >= 6725 && pc <= 6770)) return "Zone 2";
+  if ((pc >= 870 && pc <= 885) || (pc >= 2880 && pc <= 2899) || (pc >= 6400 && pc <= 6600)) return "Zone 3";
+  if ((pc >= 4000 && pc <= 4499) || (pc >= 2000 && pc <= 2399) || (pc >= 6000 && pc <= 6199)) return "Zone 4";
+  if ((pc >= 3000 && pc <= 3499) || (pc >= 5000 && pc <= 5199)) return "Zone 5";
+  if ((pc >= 2600 && pc <= 2620) || (pc >= 7000 && pc <= 7149)) return "Zone 6";
+  if ((pc >= 2627 && pc <= 2640) || (pc >= 3699 && pc <= 3740)) return "Zone 7";
+  if (pc >= 2000 && pc <= 2999) return "Zone 4";
+  if (pc >= 3000 && pc <= 3999) return "Zone 5";
+  if (pc >= 4000 && pc <= 4999) return "Zone 4";
+  if (pc >= 5000 && pc <= 5999) return "Zone 5";
+  if (pc >= 6000 && pc <= 6999) return "Zone 4";
+  if (pc >= 7000 && pc <= 7999) return "Zone 6";
+  if (pc >= 800 && pc <= 999) return "Zone 1";
+  return "Zone 4";
 };
 
-const MATERIAL_FACTORS = {
+// ─── Emission Factors ───────────────────────────────────────────────────────
+const SECTOR_FACTORS = {
   "Steel": 1.85, "Aluminum": 8.24, "Copper": 3.80, "Plastic (PET)": 2.73,
   "Plastic (HDPE)": 2.13, "Glass": 0.85, "Cardboard": 0.94, "Wood": 0.46,
   "Concrete": 0.13, "Rubber": 2.85,
@@ -340,11 +348,10 @@ export default function GHGEntryDialog({ open, onClose, onSaved, scope, category
           status: form.status,
         });
       }
-      // Auto-generate Scope 3 Cat 3 (Upstream Energy / WTT) for Scope 2 electricity
+      // Auto-generate Scope 3 Cat 3 WTT for Scope 2 electricity
       if (isEnergy && (form.energy_tier === "tier1" || form.energy_tier === "tier2") && form.energy_type?.startsWith("Electricity")) {
         const kWh = parseFloat(form.quantity) || 0;
         if (kWh > 0) {
-          // WTT factor for Australian grid electricity ≈ 0.047 kgCO2e/kWh (DEFRA/NGA upstream factor)
           const WTT_FACTOR = 0.047;
           const greenAdj = 1 - (parseFloat(form.green_power_pct) || 0) / 100;
           const wttTco2e = kWh * WTT_FACTOR * greenAdj / 1000;
@@ -364,12 +371,43 @@ export default function GHGEntryDialog({ open, onClose, onSaved, scope, category
             tco2e: parseFloat(wttTco2e.toFixed(6)),
             wtt_tco2e: parseFloat(wttTco2e.toFixed(6)),
             scope3_3_tco2e: parseFloat(wttTco2e.toFixed(6)),
-            calculation_method: `WTT auto: ${kWh} kWh × ${WTT_FACTOR} kgCO₂e/kWh (DEFRA NGA upstream factor)`,
+            calculation_method: `WTT auto: ${kWh} kWh × ${WTT_FACTOR} kgCO₂e/kWh (DEFRA NGA upstream)`,
             data_quality_tier: form.energy_tier,
             data_quality_score: form.energy_tier === "tier1" ? 9 : 7,
             reporting_year: 2024,
             status: form.status,
-            notes: "Auto-generated Scope 3 Category 3 upstream (WTT) record — paired with Scope 2 electricity entry",
+            notes: "Auto-generated Scope 3 Cat 3 WTT paired with Scope 2 electricity entry",
+          });
+        }
+      }
+      // Auto-generate Scope 3 Cat 3 WTT for Scope 1 Stationary Fuel
+      if (!isEnergy && isProcess === false && data.scope === "Scope 1" && !isRefrig && form.fuel_type) {
+        const vol = parseFloat(form.fuel_volume) || parseFloat(form.exact_fuel_volume) || 0;
+        if (vol > 0) {
+          const WTT_FUEL = { "Natural Gas": 0.334, "Diesel": 0.531, "Petrol": 0.477, "LPG": 0.363 };
+          const wttFactor = WTT_FUEL[form.fuel_type] || 0.334;
+          const wttTco2e = vol * wttFactor / 1000;
+          await base44.entities.EmissionEntry.create({
+            scope: "Scope 3",
+            category: "Fuel and Energy-Related Activities",
+            s3_category_number: 3,
+            sub_category: `Well-to-Tank (${form.fuel_type})`,
+            source_name: `${form.source_name || form.fuel_type} — WTT (auto)`,
+            location_id: form.location_id,
+            location_name: loc?.name || "",
+            start_date: form.start_date,
+            end_date: form.end_date,
+            quantity: vol,
+            unit: form.fuel_volume_unit || "L",
+            tco2e: parseFloat(wttTco2e.toFixed(6)),
+            wtt_tco2e: parseFloat(wttTco2e.toFixed(6)),
+            scope3_3_tco2e: parseFloat(wttTco2e.toFixed(6)),
+            calculation_method: `WTT auto: ${vol} L ${form.fuel_type} × ${wttFactor} kgCO₂e/L (DEFRA NGA WTT)`,
+            data_quality_tier: "tier2",
+            data_quality_score: 7,
+            reporting_year: 2024,
+            status: form.status,
+            notes: `Auto-generated Scope 3 Cat 3 WTT for ${form.fuel_type} stationary combustion`,
           });
         }
       }
@@ -829,14 +867,28 @@ export default function GHGEntryDialog({ open, onClose, onSaved, scope, category
                       <Input type="number" className="mt-1" placeholder="0" value={form.floor_area_sqm || ""} onChange={e => set("floor_area_sqm", e.target.value)} />
                     </div>
                     <div>
-                      <Label className="text-sm font-medium">NCC Climate Zone</Label>
-                      <Select value={form.ncc_climate_zone || "Zone 5"} onValueChange={v => set("ncc_climate_zone", v)}>
-                        <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          {["Zone 1","Zone 2","Zone 3","Zone 4","Zone 5","Zone 6","Zone 7"].map(z => <SelectItem key={z} value={z}>{z}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
+                      <Label className="text-sm font-medium">Facility Postcode (AU)</Label>
+                      <Input className="mt-1" placeholder="e.g. 3000" maxLength={4}
+                        value={form.facility_postcode || ""}
+                        onChange={e => {
+                          set("facility_postcode", e.target.value);
+                          const zone = postcodeToNCCZone(e.target.value);
+                          if (zone) set("ncc_climate_zone", zone);
+                        }}
+                      />
                     </div>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium">NCC Climate Zone</Label>
+                    <Select value={form.ncc_climate_zone || "Zone 5"} onValueChange={v => set("ncc_climate_zone", v)}>
+                      <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {["Zone 1","Zone 2","Zone 3","Zone 4","Zone 5","Zone 6","Zone 7"].map(z => <SelectItem key={z} value={z}>{z}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                    {form.facility_postcode && postcodeToNCCZone(form.facility_postcode) && (
+                      <p className="text-xs text-orange-600 mt-1">✓ Auto-mapped from postcode {form.facility_postcode} → {postcodeToNCCZone(form.facility_postcode)}</p>
+                    )}
                   </div>
                   <p className="text-xs text-orange-600">💡 Emissions estimated using CBPS/NCC building intensity tables × local grid emission factor.</p>
                 </div>

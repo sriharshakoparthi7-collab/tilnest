@@ -61,6 +61,12 @@ export default function InvestmentsPCAFDialog({ open, onClose, onSaved }) {
     vehicle_fuel_litres: "", vehicle_distance_km: "",
     ppp_gdp: "", sovereign_emissions_tco2e: "",
     facilitated_amount: "",
+    // UoP double-attribution
+    uop_investor_amount: "", uop_total_structure_evd: "",
+    uop_underlying_emissions: "", uop_underlying_attr_factor: "",
+    // Securitization look-through
+    tranche_investment_coa: "", total_tranche_coa: "", total_deal_coa: "",
+    collateral_attr_factor: "", collateral_emissions: "",
     start_date: "", end_date: "", notes: "", status: "Draft",
   });
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
@@ -78,12 +84,34 @@ export default function InvestmentsPCAFDialog({ open, onClose, onSaved }) {
   const s1s2 = parseFloat(form.s1s2_tco2e) || 0;
   const s3 = form.include_s3 ? (parseFloat(form.s3_tco2e) || 0) : 0;
 
+  // UoP double-attribution: investor_share × underlying_attr_factor × underlying_emissions
+  const uopInvAmt = parseFloat(form.uop_investor_amount) || 0;
+  const uopTotalEvd = parseFloat(form.uop_total_structure_evd) || 0;
+  const uopUnderlyingEm = parseFloat(form.uop_underlying_emissions) || 0;
+  const uopUnderlyingAF = parseFloat(form.uop_underlying_attr_factor) || 0;
+  const uopInvestorShare = uopTotalEvd > 0 ? uopInvAmt / uopTotalEvd : 0;
+  const uopFinancedEm = uopInvestorShare * uopUnderlyingAF * uopUnderlyingEm;
+
+  // Securitization look-through
+  const trancheInvCoa = parseFloat(form.tranche_investment_coa) || 0;
+  const totalTrancheCoa = parseFloat(form.total_tranche_coa) || 0;
+  const totalDealCoa = parseFloat(form.total_deal_coa) || 0;
+  const collateralAF = parseFloat(form.collateral_attr_factor) || 0;
+  const collateralEm = parseFloat(form.collateral_emissions) || 0;
+  const feLoan = collateralEm * collateralAF;
+  const feTranche = totalDealCoa > 0 ? (totalTrancheCoa / totalDealCoa) * feLoan : 0;
+  const feInvestment = totalTrancheCoa > 0 ? (trancheInvCoa / totalTrancheCoa) * feTranche : 0;
+
   let attrFactor = 0;
   if (["listed_equity_bonds", "facilitated_capital_markets"].includes(assetClass)) {
     attrFactor = evic > 0 ? outstanding / evic : 0;
-  } else if (["business_loans_unlisted", "project_finance", "uop_structures", "securitizations"].includes(assetClass)) {
+  } else if (["business_loans_unlisted", "project_finance"].includes(assetClass)) {
     attrFactor = ev > 0 ? outstanding / ev : 0;
-  } else if (["cre_mortgages"].includes(assetClass)) {
+  } else if (assetClass === "uop_structures") {
+    attrFactor = uopTotalEvd > 0 ? uopInvAmt / uopTotalEvd : 0;
+  } else if (assetClass === "securitizations") {
+    attrFactor = totalTrancheCoa > 0 ? trancheInvCoa / totalTrancheCoa : 0;
+  } else if (assetClass === "cre_mortgages") {
     attrFactor = propVal > 0 ? outstanding / propVal : 0;
   } else if (assetClass === "motor_vehicle_loans") {
     attrFactor = vehicleVal > 0 ? outstanding / vehicleVal : 0;
@@ -100,15 +128,16 @@ export default function InvestmentsPCAFDialog({ open, onClose, onSaved }) {
     attrFactor = vehicleOwnership > 0 ? outstanding / vehicleOwnership : 0;
   } else if (assetClass === "insurance_treaty_reinsurance") {
     const gwp = parseFloat(form.gross_written_premium) || 0;
-    attrFactor = gwp > 0 ? outstanding / gwp : 0; // cession rate
+    attrFactor = gwp > 0 ? outstanding / gwp : 0;
   }
 
-  // Facilitated = 33% weighting
   const isFacilitated = assetClass === "facilitated_capital_markets";
+  const isUoP = assetClass === "uop_structures";
+  const isSecuritization = assetClass === "securitizations";
   const effectiveFactor = isFacilitated ? attrFactor * 0.33 : attrFactor;
 
-  const s1s2_financed = s1s2 * effectiveFactor;
-  const s3_financed = s3 * effectiveFactor;
+  const s1s2_financed = isUoP ? uopFinancedEm : isSecuritization ? feInvestment : s1s2 * effectiveFactor;
+  const s3_financed = (isUoP || isSecuritization) ? 0 : s3 * effectiveFactor;
   const total_financed = s1s2_financed + s3_financed;
 
   const save = async () => {
@@ -148,7 +177,7 @@ export default function InvestmentsPCAFDialog({ open, onClose, onSaved }) {
   if (!open) return null;
 
   const showEVIC = ["listed_equity_bonds", "facilitated_capital_markets"].includes(assetClass);
-  const showEquityDebt = ["business_loans_unlisted", "project_finance", "uop_structures", "securitizations"].includes(assetClass);
+  const showEquityDebt = ["business_loans_unlisted", "project_finance"].includes(assetClass);
   const showPropVal = assetClass === "cre_mortgages";
   const showVehicle = assetClass === "motor_vehicle_loans";
   const showSovereign = ["sovereign_debt", "sub_sovereign_debt"].includes(assetClass);
@@ -255,42 +284,80 @@ export default function InvestmentsPCAFDialog({ open, onClose, onSaved }) {
               </div>
             )}
 
+            {/* UoP Double-Attribution Inputs */}
+            {isUoP && (
+              <div className="space-y-3 border-t border-slate-200 pt-3">
+                <div className="text-xs font-semibold text-indigo-700">Double Attribution — Use of Proceeds Structure</div>
+                <p className="text-xs text-slate-500">Step 1: Your investor share = Investor Amount ÷ Total UoP Structure Size. Step 2: × Underlying Attribution Factor × Underlying Asset Emissions.</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-sm font-medium">Investor Outstanding Amount (USD)</Label>
+                    <Input type="number" className="mt-1" placeholder="0" value={form.uop_investor_amount} onChange={e => set("uop_investor_amount", e.target.value)} />
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium">Total UoP Structure Size (USD)</Label>
+                    <Input type="number" className="mt-1" placeholder="0" value={form.uop_total_structure_evd} onChange={e => set("uop_total_structure_evd", e.target.value)} />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-sm font-medium">Underlying Asset Attribution Factor (%)</Label>
+                    <Input type="number" className="mt-1" placeholder="0.00" step="0.01" value={form.uop_underlying_attr_factor} onChange={e => set("uop_underlying_attr_factor", e.target.value)} />
+                    <p className="text-xs text-slate-400 mt-1">e.g. Outstanding ÷ EVIC of the underlying company</p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium">Underlying Asset Emissions (tCO₂e)</Label>
+                    <Input type="number" className="mt-1" placeholder="0" value={form.uop_underlying_emissions} onChange={e => set("uop_underlying_emissions", e.target.value)} />
+                  </div>
+                </div>
+                {uopInvestorShare > 0 && (
+                  <div className="bg-indigo-50 border border-indigo-200 rounded-lg px-3 py-2 text-xs text-indigo-800">
+                    Investor Share: <strong>{(uopInvestorShare * 100).toFixed(3)}%</strong> × AF {(uopUnderlyingAF * 100).toFixed(2)}% × {uopUnderlyingEm} tCO₂e = <strong>{uopFinancedEm.toFixed(4)} tCO₂e</strong>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Securitization Look-Through Inputs */}
+            {isSecuritization && (
+              <div className="space-y-3 border-t border-slate-200 pt-3">
+                <div className="text-xs font-semibold text-violet-700">Look-Through Attribution — Securitization</div>
+                <p className="text-xs text-slate-500">FE = (Tranche Inv / Total Tranche) × (Total Tranche / Total Deal) × (Collateral AF × Collateral Emissions)</p>
+                <div className="grid grid-cols-3 gap-2">
+                  <div>
+                    <Label className="text-xs font-medium">Your Tranche COA (USD)</Label>
+                    <Input type="number" className="mt-1 h-8 text-xs" placeholder="0" value={form.tranche_investment_coa} onChange={e => set("tranche_investment_coa", e.target.value)} />
+                  </div>
+                  <div>
+                    <Label className="text-xs font-medium">Total Tranche COA (USD)</Label>
+                    <Input type="number" className="mt-1 h-8 text-xs" placeholder="0" value={form.total_tranche_coa} onChange={e => set("total_tranche_coa", e.target.value)} />
+                  </div>
+                  <div>
+                    <Label className="text-xs font-medium">Total Deal COA (USD)</Label>
+                    <Input type="number" className="mt-1 h-8 text-xs" placeholder="0" value={form.total_deal_coa} onChange={e => set("total_deal_coa", e.target.value)} />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-sm font-medium">Collateral Attribution Factor</Label>
+                    <Input type="number" className="mt-1" placeholder="0.00" step="0.001" value={form.collateral_attr_factor} onChange={e => set("collateral_attr_factor", e.target.value)} />
+                    <p className="text-xs text-slate-400 mt-1">e.g. EVIC ratio or Property Value ratio of underlying</p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium">Collateral Emissions (tCO₂e)</Label>
+                    <Input type="number" className="mt-1" placeholder="0" value={form.collateral_emissions} onChange={e => set("collateral_emissions", e.target.value)} />
+                  </div>
+                </div>
+                {feInvestment > 0 && (
+                  <div className="bg-violet-50 border border-violet-200 rounded-lg px-3 py-2 text-xs text-violet-800">
+                    FE_loan: {feLoan.toFixed(4)} → FE_tranche: {feTranche.toFixed(4)} → <strong>Your FE: {feInvestment.toFixed(4)} tCO₂e</strong>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Insurance inputs */}
             {isInsurance && (
-              <div>
-                <Label className="text-sm font-medium">{showInsTreaty ? "Ceded Written Premium (USD)" : "Gross Written Premium / Insurer Premium (USD)"}</Label>
-                <Input type="number" className="mt-1" placeholder="0" value={form.insurance_premium} onChange={e => set("insurance_premium", e.target.value)} />
-              </div>
-            )}
-            {showInsComm && (
-              <div>
-                <Label className="text-sm font-medium">Customer Revenue (USD)</Label>
-                <Input type="number" className="mt-1" placeholder="0" value={form.customer_revenue || ''} onChange={e => set("customer_revenue", e.target.value)} />
-                <p className="text-xs text-slate-400 mt-1">IAE = (Premium ÷ Customer Revenue) × Company Emissions</p>
-              </div>
-            )}
-            {showInsProj && (
-              <div>
-                <Label className="text-sm font-medium">Total Project Cost / Total Insured Value (USD)</Label>
-                <Input type="number" className="mt-1" placeholder="0" value={form.total_project_cost || ''} onChange={e => set("total_project_cost", e.target.value)} />
-                <p className="text-xs text-slate-400 mt-1">IAE = (Premium ÷ Total Project Cost) × Project Emissions</p>
-              </div>
-            )}
-            {showInsMotor && (
-              <div>
-                <Label className="text-sm font-medium">Total Costs of Vehicle Ownership (USD)</Label>
-                <Input type="number" className="mt-1" placeholder="0" value={form.total_vehicle_ownership_cost || ''} onChange={e => set("total_vehicle_ownership_cost", e.target.value)} />
-                <p className="text-xs text-slate-400 mt-1">IAE = (Insurer Premium ÷ Total Ownership Costs) × Vehicle Emissions</p>
-              </div>
-            )}
-            {showInsTreaty && (
-              <div>
-                <Label className="text-sm font-medium">Gross Written Premium — Primary Insurer (USD)</Label>
-                <Input type="number" className="mt-1" placeholder="0" value={form.gross_written_premium || ''} onChange={e => set("gross_written_premium", e.target.value)} />
-                <p className="text-xs text-slate-400 mt-1">Cession Rate = Ceded Premium ÷ Gross Written Premium. Then IAE = Cession Rate × Cedent IAE.</p>
-              </div>
-            )}
-            {effectiveFactor > 0 && (
               <div className="bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs">
                 <span className="text-slate-500">Attribution Factor: </span>
                 <span className="font-bold text-slate-800">{(attrFactor * 100).toFixed(3)}%</span>
