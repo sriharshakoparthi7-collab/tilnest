@@ -34,6 +34,12 @@ const SECTOR_FACTORS = {
   "Concrete": 0.13, "Rubber": 2.85,
 };
 
+const MATERIAL_FACTORS = {
+  "Steel": 1.85, "Aluminum": 8.24, "Copper": 3.80, "Plastic (PET)": 2.73,
+  "Plastic (HDPE)": 2.13, "Glass": 0.85, "Cardboard": 0.94, "Wood": 0.46,
+  "Concrete": 0.13, "Rubber": 2.85, "General": 1.0,
+};
+
 const AUS_WASTE_FACTORS = {
   "Landfill - General": 1.91, "Landfill - Organic": 2.64, "Recycling - Metal": 0.02,
   "Recycling - Plastic": 0.04, "Recycling - Paper": 0.03, "Recycling - Glass": 0.01,
