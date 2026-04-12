@@ -9,6 +9,9 @@ import GHGEntryDialog from "../components/GHGEntryDialog";
 import ProductClassificationGateway from "../components/ProductClassificationGateway";
 import SoldProductsDialog from "../components/SoldProductsDialog";
 import InvestmentsDialog from "../components/InvestmentsDialog";
+import InvestmentsGateway from "../components/InvestmentsGateway";
+import BusinessTravelDialog from "../components/BusinessTravelDialog";
+import RefrigerantsTieredDialog from "../components/RefrigerantsTieredDialog";
 import BulkUploadModal from "../components/BulkUploadModal";
 import EmissionsTable from "../components/EmissionsTable";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, LineChart, Line, XAxis, YAxis, CartesianGrid, Legend } from "recharts";
@@ -294,6 +297,10 @@ export default function EnvironmentPage() {
   const [showInvestments, setShowInvestments] = useState(false);
   const [editInvestment, setEditInvestment] = useState(null);
   const [showGateway, setShowGateway] = useState(false);
+  const [showInvGateway, setShowInvGateway] = useState(false);
+  const [showTravelDialog, setShowTravelDialog] = useState(false);
+  const [travelSubCategory, setTravelSubCategory] = useState("Air Travel");
+  const [showRefrigDialog, setShowRefrigDialog] = useState(false);
 
   const openAdd = (overrides = {}) => {
     setEditEntry(null);
@@ -374,13 +381,13 @@ export default function EnvironmentPage() {
             </div>
           ) : categoryKey === "travel" ? (
             <div className="flex items-center gap-2">
-              <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={() => openAdd({ defaultValues: { sub_category: "Air Travel" } })}>
+              <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={() => { setTravelSubCategory("Air Travel"); setShowTravelDialog(true); }}>
                 <Plus className="w-3.5 h-3.5" /> ✈ Air Travel
               </Button>
-              <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={() => openAdd({ defaultValues: { sub_category: "Road & Rail" } })}>
+              <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={() => { setTravelSubCategory("Road & Rail"); setShowTravelDialog(true); }}>
                 <Plus className="w-3.5 h-3.5" /> 🚗 Road & Rail
               </Button>
-              <Button size="sm" className="gap-1.5 text-xs" onClick={() => openAdd({ defaultValues: { sub_category: "Accommodation" } })}>
+              <Button size="sm" className="gap-1.5 text-xs" onClick={() => { setTravelSubCategory("Accommodation"); setShowTravelDialog(true); }}>
                 <Plus className="w-3.5 h-3.5" /> 🏨 Accommodation
               </Button>
             </div>
@@ -406,8 +413,12 @@ export default function EnvironmentPage() {
             <Button size="sm" className="gap-1.5" onClick={() => setShowGateway(true)}>
               <Plus className="w-4 h-4" /> Add Product
             </Button>
+          ) : categoryKey === "refrigerants" ? (
+            <Button size="sm" className="gap-1.5" onClick={() => setShowRefrigDialog(true)}>
+              <Plus className="w-4 h-4" /> Add Refrigerant Entry
+            </Button>
           ) : categoryKey === "investments" ? (
-            <Button size="sm" className="gap-1.5" onClick={() => setShowInvestments(true)}>
+            <Button size="sm" className="gap-1.5" onClick={() => setShowInvGateway(true)}>
               <Plus className="w-4 h-4" /> Add Investment
             </Button>
           ) : (
@@ -574,11 +585,31 @@ export default function EnvironmentPage() {
         triggeredCategories={soldProductsCategories}
       />
 
+      <InvestmentsGateway
+        open={showInvGateway}
+        onClose={() => setShowInvGateway(false)}
+        onProceedPCAF={() => { setShowInvGateway(false); setShowInvestments(true); }}
+        onControlledAsset={load}
+      />
+
       <InvestmentsDialog
         open={showInvestments}
         onClose={() => { setShowInvestments(false); setEditInvestment(null); }}
         onSaved={load}
         defaultValues={editInvestment || {}}
+      />
+
+      <BusinessTravelDialog
+        open={showTravelDialog}
+        onClose={() => setShowTravelDialog(false)}
+        onSaved={load}
+        subCategory={travelSubCategory}
+      />
+
+      <RefrigerantsTieredDialog
+        open={showRefrigDialog}
+        onClose={() => setShowRefrigDialog(false)}
+        onSaved={load}
       />
 
       <GHGEntryDialog
