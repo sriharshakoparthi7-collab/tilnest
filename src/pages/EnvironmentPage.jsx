@@ -288,6 +288,7 @@ export default function EnvironmentPage() {
   const [locations, setLocations] = useState([]);
   const [fy, setFy] = useState("FY2024");
   const [showBulk, setShowBulk] = useState(false);
+  const [dialogProps, setDialogProps] = useState({});
   const [showSoldProducts, setShowSoldProducts] = useState(false);
   const [soldProductsCategories, setSoldProductsCategories] = useState([]);
   const [showInvestments, setShowInvestments] = useState(false);
