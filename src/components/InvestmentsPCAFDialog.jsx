@@ -17,6 +17,11 @@ const ASSET_CLASSES = [
   { key: "sovereign_debt", label: "Sovereign Debt", denominator: "PPP-Adjusted GDP", catNum: 15 },
   { key: "sub_sovereign_debt", label: "Sub-Sovereign Debt (States, Municipalities)", denominator: "Sub-Sovereign PPP-Adjusted GDP", catNum: 15 },
   { key: "facilitated_capital_markets", label: "Facilitated Emissions — Capital Markets", denominator: "EVIC or Total Equity + Debt", catNum: 15 },
+  // Part C: Insurance-Associated Emissions
+  { key: "insurance_commercial_lines", label: "Insurance — Commercial Lines", denominator: "Customer Revenue", catNum: 15, isInsurance: true },
+  { key: "insurance_project", label: "Insurance — Project Insurance (CAR/EAR/IDI)", denominator: "Total Project Cost (Total Insured Value)", catNum: 15, isInsurance: true },
+  { key: "insurance_personal_motor", label: "Insurance — Personal Motor Portfolios", denominator: "Total Costs of Vehicle Ownership", catNum: 15, isInsurance: true },
+  { key: "insurance_treaty_reinsurance", label: "Insurance — Treaty Reinsurance", denominator: "Gross Written Premium (Cedent)", catNum: 15, isInsurance: true },
 ];
 
 const PCAF_QUALITY_LABELS = {
@@ -61,7 +66,8 @@ export default function InvestmentsPCAFDialog({ open, onClose, onSaved }) {
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
   const asset = ASSET_CLASSES.find(a => a.key === assetClass);
-  const outstanding = parseFloat(form.outstanding_amount) || parseFloat(form.facilitated_amount) || 0;
+  const isInsurance = asset?.isInsurance || false;
+  const outstanding = parseFloat(form.outstanding_amount) || parseFloat(form.facilitated_amount) || parseFloat(form.insurance_premium) || 0;
   const evic = parseFloat(form.evic) || 0;
   const totalEq = parseFloat(form.total_equity) || 0;
   const totalDebt = parseFloat(form.total_debt) || 0;
@@ -83,6 +89,18 @@ export default function InvestmentsPCAFDialog({ open, onClose, onSaved }) {
     attrFactor = vehicleVal > 0 ? outstanding / vehicleVal : 0;
   } else if (["sovereign_debt", "sub_sovereign_debt"].includes(assetClass)) {
     attrFactor = pppGdp > 0 ? outstanding / pppGdp : 0;
+  } else if (assetClass === "insurance_commercial_lines") {
+    const custRev = parseFloat(form.customer_revenue) || 0;
+    attrFactor = custRev > 0 ? outstanding / custRev : 0;
+  } else if (assetClass === "insurance_project") {
+    const projCost = parseFloat(form.total_project_cost) || 0;
+    attrFactor = projCost > 0 ? outstanding / projCost : 0;
+  } else if (assetClass === "insurance_personal_motor") {
+    const vehicleOwnership = parseFloat(form.total_vehicle_ownership_cost) || 0;
+    attrFactor = vehicleOwnership > 0 ? outstanding / vehicleOwnership : 0;
+  } else if (assetClass === "insurance_treaty_reinsurance") {
+    const gwp = parseFloat(form.gross_written_premium) || 0;
+    attrFactor = gwp > 0 ? outstanding / gwp : 0; // cession rate
   }
 
   // Facilitated = 33% weighting
@@ -95,7 +113,9 @@ export default function InvestmentsPCAFDialog({ open, onClose, onSaved }) {
 
   const save = async () => {
     setSaving(true);
-    const denominator = evic || ev || propVal || vehicleVal || pppGdp || 0;
+    const denominator = evic || ev || propVal || vehicleVal || pppGdp ||
+      parseFloat(form.customer_revenue) || parseFloat(form.total_project_cost) ||
+      parseFloat(form.total_vehicle_ownership_cost) || parseFloat(form.gross_written_premium) || 0;
     await base44.entities.EmissionEntry.create({
       scope: "Scope 3", category: "Investments", s3_category_number: 15,
       sub_category: asset.label,
@@ -132,6 +152,10 @@ export default function InvestmentsPCAFDialog({ open, onClose, onSaved }) {
   const showPropVal = assetClass === "cre_mortgages";
   const showVehicle = assetClass === "motor_vehicle_loans";
   const showSovereign = ["sovereign_debt", "sub_sovereign_debt"].includes(assetClass);
+  const showInsComm = assetClass === "insurance_commercial_lines";
+  const showInsProj = assetClass === "insurance_project";
+  const showInsMotor = assetClass === "insurance_personal_motor";
+  const showInsTreaty = assetClass === "insurance_treaty_reinsurance";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
@@ -228,6 +252,42 @@ export default function InvestmentsPCAFDialog({ open, onClose, onSaved }) {
               <div>
                 <Label className="text-sm font-medium">PPP-Adjusted GDP (USD)</Label>
                 <Input type="number" className="mt-1" placeholder="0" value={form.ppp_gdp} onChange={e => set("ppp_gdp", e.target.value)} />
+              </div>
+            )}
+
+            {/* Insurance inputs */}
+            {isInsurance && (
+              <div>
+                <Label className="text-sm font-medium">{showInsTreaty ? "Ceded Written Premium (USD)" : "Gross Written Premium / Insurer Premium (USD)"}</Label>
+                <Input type="number" className="mt-1" placeholder="0" value={form.insurance_premium} onChange={e => set("insurance_premium", e.target.value)} />
+              </div>
+            )}
+            {showInsComm && (
+              <div>
+                <Label className="text-sm font-medium">Customer Revenue (USD)</Label>
+                <Input type="number" className="mt-1" placeholder="0" value={form.customer_revenue || ''} onChange={e => set("customer_revenue", e.target.value)} />
+                <p className="text-xs text-slate-400 mt-1">IAE = (Premium ÷ Customer Revenue) × Company Emissions</p>
+              </div>
+            )}
+            {showInsProj && (
+              <div>
+                <Label className="text-sm font-medium">Total Project Cost / Total Insured Value (USD)</Label>
+                <Input type="number" className="mt-1" placeholder="0" value={form.total_project_cost || ''} onChange={e => set("total_project_cost", e.target.value)} />
+                <p className="text-xs text-slate-400 mt-1">IAE = (Premium ÷ Total Project Cost) × Project Emissions</p>
+              </div>
+            )}
+            {showInsMotor && (
+              <div>
+                <Label className="text-sm font-medium">Total Costs of Vehicle Ownership (USD)</Label>
+                <Input type="number" className="mt-1" placeholder="0" value={form.total_vehicle_ownership_cost || ''} onChange={e => set("total_vehicle_ownership_cost", e.target.value)} />
+                <p className="text-xs text-slate-400 mt-1">IAE = (Insurer Premium ÷ Total Ownership Costs) × Vehicle Emissions</p>
+              </div>
+            )}
+            {showInsTreaty && (
+              <div>
+                <Label className="text-sm font-medium">Gross Written Premium — Primary Insurer (USD)</Label>
+                <Input type="number" className="mt-1" placeholder="0" value={form.gross_written_premium || ''} onChange={e => set("gross_written_premium", e.target.value)} />
+                <p className="text-xs text-slate-400 mt-1">Cession Rate = Ceded Premium ÷ Gross Written Premium. Then IAE = Cession Rate × Cedent IAE.</p>
               </div>
             )}
             {effectiveFactor > 0 && (

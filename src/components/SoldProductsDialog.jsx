@@ -8,6 +8,8 @@ import { base44 } from "@/api/base44Client";
 
 const AUS_GRID = 0.79;
 const WASTE_FACTORS = { "Landfill": 1.91, "Recycling": 0.04, "Incineration": 0.56, "Composting": 0.19 };
+// Global average scenario: 80% landfill, 20% incineration (conservative fallback per GHG Protocol)
+const GLOBAL_AVG_WASTE_FACTOR = 0.8 * 1.91 + 0.2 * 0.56; // = 1.64 kgCO2e/kg
 const REFRIGERANT_GWP = { "R-410A": 2088, "R-134a": 1430, "R-32": 675, "R-22": 1810, "CO2": 1 };
 
 export default function SoldProductsDialog({ open, onClose, onSaved, triggeredCategories = [] }) {
@@ -50,8 +52,18 @@ export default function SoldProductsDialog({ open, onClose, onSaved, triggeredCa
   const cat11_indirect = units * (parseFloat(form.indirect_energy_kwh_lifetime) || 0) * AUS_GRID / 1000;
   const cat11 = hasCat11 ? cat11_direct + cat11_fuel + cat11_gwp + cat11_indirect : 0;
 
-  // Cat 12 calc
-  const cat12 = hasCat12 ? units * (parseFloat(form.eol_waste_kg) || 0) * (WASTE_FACTORS[form.eol_disposal_method] || 1.91) / 1000 : 0;
+  // Cat 12 calc — tier2=regional, tier3=global average
+  const cat12_tier = form.cat12_tier || "tier2";
+  let cat12 = 0;
+  if (hasCat12) {
+    if (cat12_tier === "tier1") {
+      cat12 = units * (parseFloat(form.eol_recovered_units) || 0) * (parseFloat(form.eol_recycling_ef) || 0.04) / 1000;
+    } else if (cat12_tier === "tier3") {
+      cat12 = units * (parseFloat(form.eol_waste_kg) || 0) * GLOBAL_AVG_WASTE_FACTOR / 1000;
+    } else {
+      cat12 = units * (parseFloat(form.eol_waste_kg) || 0) * (WASTE_FACTORS[form.eol_disposal_method] || 1.91) / 1000;
+    }
+  }
 
   const totalTco2e = cat10 + cat11 + cat12;
 
@@ -186,19 +198,67 @@ export default function SoldProductsDialog({ open, onClose, onSaved, triggeredCa
             <div className="bg-orange-50 border border-orange-200 rounded-xl p-4 space-y-3">
               <div className="text-xs font-semibold text-orange-800 flex items-center gap-1.5"><Info className="w-3.5 h-3.5" />Category 12 — End-of-Life Treatment</div>
               <p className="text-xs text-orange-700">Emissions from the disposal or recycling of the product at end of life.</p>
-              <div className="grid grid-cols-2 gap-3">
+
+              {/* Tier selection for Cat 12 */}
+              <div className="space-y-2">
+                {[
+                  { key: "tier1", label: "Tier 1: Specific EoL Take-Back Data (Gold)", sub: "Your company runs a take-back program and tracks exact recovery & recycling partner emissions.", score: 10 },
+                  { key: "tier2", label: "Tier 2: Regional Waste Scenario (Silver)", sub: "Use regional disposal statistics (landfill/recycling split) for the country of sale.", score: 7 },
+                  { key: "tier3", label: "Tier 3: Global Average Waste Scenario (Bronze)", sub: "No regional data. System applies a conservative global fallback: 80% landfill, 20% incineration, 0% recycling.", score: 4 },
+                ].map(t => (
+                  <label key={t.key} className={`flex items-start gap-2.5 p-2.5 rounded-lg cursor-pointer transition-all ${(form.cat12_tier || 'tier2') === t.key ? 'bg-white border border-orange-300 shadow-sm' : 'hover:bg-orange-100/50'}`}>
+                    <input type="radio" name="cat12_tier" className="mt-0.5 accent-orange-600" checked={(form.cat12_tier || 'tier2') === t.key} onChange={() => set('cat12_tier', t.key)} />
+                    <div>
+                      <div className="text-sm font-medium text-slate-800">{t.label}</div>
+                      <div className="text-xs text-slate-500">{t.sub}</div>
+                    </div>
+                  </label>
+                ))}
+              </div>
+
+              {/* Tier 1 inputs */}
+              {(form.cat12_tier || 'tier2') === 'tier1' && (
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-sm font-medium">Units recovered / year</Label>
+                    <Input type="number" className="mt-1" placeholder="0" value={form.eol_recovered_units || ''} onChange={e => set('eol_recovered_units', e.target.value)} />
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium">Recycling facility EF (tCO₂e/unit)</Label>
+                    <Input type="number" className="mt-1" placeholder="0.04" value={form.eol_recycling_ef || ''} onChange={e => set('eol_recycling_ef', e.target.value)} />
+                    <p className="text-xs text-slate-400 mt-1">From partner's verified emissions report.</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Tier 2 inputs */}
+              {(form.cat12_tier || 'tier2') === 'tier2' && (
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-sm font-medium">Waste weight / unit (kg)</Label>
+                    <Input type="number" className="mt-1" placeholder="0" value={form.eol_waste_kg} onChange={e => set('eol_waste_kg', e.target.value)} />
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium">Primary Disposal Method (Region)</Label>
+                    <Select value={form.eol_disposal_method} onValueChange={v => set('eol_disposal_method', v)}>
+                      <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                      <SelectContent>{Object.entries(WASTE_FACTORS).map(([k, v]) => <SelectItem key={k} value={k}>{k} ({v} kg/kg)</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              )}
+
+              {/* Tier 3 inputs */}
+              {(form.cat12_tier || 'tier2') === 'tier3' && (
                 <div>
                   <Label className="text-sm font-medium">Waste weight / unit (kg)</Label>
-                  <Input type="number" className="mt-1" placeholder="0" value={form.eol_waste_kg} onChange={e => set("eol_waste_kg", e.target.value)} />
+                  <Input type="number" className="mt-1" placeholder="0" value={form.eol_waste_kg} onChange={e => set('eol_waste_kg', e.target.value)} />
+                  <div className="mt-2 bg-orange-100 border border-orange-300 rounded-lg px-3 py-2 text-xs text-orange-800">
+                    🌍 Global fallback applied: 80% Landfill (1.91) + 20% Incineration (0.56) = <strong>{GLOBAL_AVG_WASTE_FACTOR.toFixed(3)} kgCO₂e/kg</strong>
+                  </div>
                 </div>
-                <div>
-                  <Label className="text-sm font-medium">Disposal Method</Label>
-                  <Select value={form.eol_disposal_method} onValueChange={v => set("eol_disposal_method", v)}>
-                    <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                    <SelectContent>{Object.entries(WASTE_FACTORS).map(([k, v]) => <SelectItem key={k} value={k}>{k} ({v} kg/kg)</SelectItem>)}</SelectContent>
-                  </Select>
-                </div>
-              </div>
+              )}
+
               {cat12 > 0 && <div className="text-xs text-orange-800 font-semibold">Cat 12 = {cat12.toFixed(4)} tCO₂e</div>}
             </div>
           )}
