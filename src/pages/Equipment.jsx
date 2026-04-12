@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { Plus, Upload, Trash2, Edit2, Zap, Search, Download } from "lucide-react";
+import { Plus, Upload, Trash2, Edit2, Zap, Search, Download, Activity } from "lucide-react";
+import EquipmentEmissionsDialog from "../components/EquipmentEmissionsDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -24,6 +25,8 @@ export default function Equipment() {
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
+  const [showEmissions, setShowEmissions] = useState(false);
+  const [emissionsEquipment, setEmissionsEquipment] = useState(null);
 
   const load = async () => {
     setLoading(true);
@@ -117,6 +120,9 @@ export default function Equipment() {
           <Button variant="outline" size="sm" onClick={() => setBulkOpen(true)} className="gap-1.5">
             <Upload className="w-3.5 h-3.5" /> Bulk Upload
           </Button>
+          <Button size="sm" variant="outline" onClick={() => { setEmissionsEquipment(null); setShowEmissions(true); }} className="gap-1.5">
+            <Activity className="w-3.5 h-3.5" /> Log Emissions
+          </Button>
           <Button size="sm" onClick={() => { setEditing(null); setFormOpen(true); }} className="gap-1.5">
             <Plus className="w-3.5 h-3.5" /> Add Equipment
           </Button>
@@ -201,10 +207,11 @@ export default function Equipment() {
                     <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[eq.status] || STATUS_COLORS.Active}`}>{eq.status}</span>
                   </td>
                   <td className="py-3 px-4">
-                    <div className="flex items-center gap-1">
-                      <button onClick={() => { setEditing(eq); setFormOpen(true); }} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700"><Edit2 className="w-3.5 h-3.5" /></button>
-                      <button onClick={() => deleteEquipment(eq.id)} className="p-1.5 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-500"><Trash2 className="w-3.5 h-3.5" /></button>
-                    </div>
+                   <div className="flex items-center gap-1">
+                     <button onClick={() => { setEmissionsEquipment(eq); setShowEmissions(true); }} className="p-1.5 rounded-lg hover:bg-emerald-50 text-slate-400 hover:text-emerald-600" title="Log Emissions"><Activity className="w-3.5 h-3.5" /></button>
+                     <button onClick={() => { setEditing(eq); setFormOpen(true); }} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700"><Edit2 className="w-3.5 h-3.5" /></button>
+                     <button onClick={() => deleteEquipment(eq.id)} className="p-1.5 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-500"><Trash2 className="w-3.5 h-3.5" /></button>
+                   </div>
                   </td>
                 </tr>
               ))}
@@ -214,6 +221,13 @@ export default function Equipment() {
       )}
 
       {/* Modals */}
+      <EquipmentEmissionsDialog
+        open={showEmissions}
+        onClose={() => { setShowEmissions(false); setEmissionsEquipment(null); }}
+        onSaved={load}
+        equipment={emissionsEquipment}
+      />
+
       <EquipmentForm
         open={formOpen}
         onClose={() => { setFormOpen(false); setEditing(null); }}

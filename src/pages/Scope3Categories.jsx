@@ -1,6 +1,11 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { Plus, ChevronRight, Search, Upload, LayoutGrid, List, CheckCircle2, Circle, X, Download } from "lucide-react";
+import { Plus, ChevronRight, Search, Upload, LayoutGrid, List, CheckCircle2, X, Download } from "lucide-react";
+import GHGEntryDialog from "../components/GHGEntryDialog";
+import BusinessTravelDialog from "../components/BusinessTravelDialog";
+import TransportationTieredDialog from "../components/TransportationTieredDialog";
+import LeasedAssetsTieredDialog from "../components/LeasedAssetsTieredDialog";
+import WasteReuseTieredDialog from "../components/WasteReuseTieredDialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -219,9 +224,19 @@ export default function Scope3Categories() {
   const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [selectedCat, setSelectedCat] = useState(null);
-  const [viewMode, setViewMode] = useState("list"); // "list" or "kanban"
+  const [viewMode, setViewMode] = useState("list");
   const [activeTab, setActiveTab] = useState("all");
   const [showUpload, setShowUpload] = useState(false);
+  // Specialized dialog states
+  const [showGHGDialog, setShowGHGDialog] = useState(false);
+  const [ghgProps, setGhgProps] = useState({});
+  const [showTravelDialog, setShowTravelDialog] = useState(false);
+  const [travelSub, setTravelSub] = useState("Air Travel");
+  const [showTransport, setShowTransport] = useState(false);
+  const [transportDir, setTransportDir] = useState("Upstream");
+  const [showLeased, setShowLeased] = useState(false);
+  const [leasedType, setLeasedType] = useState("Upstream");
+  const [showWaste, setShowWaste] = useState(false);
 
   const load = () => base44.entities.EmissionEntry.filter({ scope: "Scope 3" }).then(setEntries);
   useEffect(() => { load(); }, []);
@@ -235,7 +250,18 @@ export default function Scope3Categories() {
   const totalTCO2e = Object.values(totalByCategory).reduce((a, b) => a + b, 0);
   const completedCats = Object.keys(totalByCategory).length;
 
-  const openForm = (cat) => { setSelectedCat(cat); setShowForm(true); };
+  const openForm = (cat) => {
+    // Route specialized categories to their dedicated dialogs
+    if (cat.num === 5) { setShowWaste(true); return; }
+    if (cat.num === 6) { setTravelSub("Air Travel"); setShowTravelDialog(true); return; }
+    if (cat.num === 4) { setTransportDir("Upstream"); setShowTransport(true); return; }
+    if (cat.num === 9) { setTransportDir("Downstream"); setShowTransport(true); return; }
+    if (cat.num === 8) { setLeasedType("Upstream"); setShowLeased(true); return; }
+    if (cat.num === 13) { setLeasedType("Downstream"); setShowLeased(true); return; }
+    if (cat.num === 1) { setGhgProps({ scope: "Scope 3", category: "Purchased Goods and Services" }); setShowGHGDialog(true); return; }
+    if (cat.num === 2) { setGhgProps({ scope: "Scope 3", category: "Capital Goods" }); setShowGHGDialog(true); return; }
+    setSelectedCat(cat); setShowForm(true);
+  };
 
   const filteredCats = S3_CATEGORIES.filter(c => {
     const matchSearch = !search || c.label.toLowerCase().includes(search.toLowerCase());
@@ -316,42 +342,41 @@ export default function Scope3Categories() {
                 {filteredCats.filter(c => c.upstream).map((cat, idx, arr) => {
                   const hasDat = totalByCategory[cat.num];
                   return (
-                    <div key={cat.num} className={`flex items-center gap-4 px-5 py-3.5 hover:bg-slate-50 transition-colors cursor-pointer group ${idx < arr.length - 1 ? "border-b border-slate-100" : ""}`}
-                      onClick={() => openForm(cat)}>
-                      <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0 ${hasDat ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>
-                        {cat.num}
-                      </div>
-                      <div className="flex-1 min-w-0">
+                    <div key={cat.num} className={`flex items-center gap-4 px-5 py-3.5 hover:bg-slate-50 transition-colors group ${idx < arr.length - 1 ? "border-b border-slate-100" : ""}`}>
+                      <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0 cursor-pointer ${hasDat ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"}`} onClick={() => openForm(cat)}>{cat.num}</div>
+                      <div className="flex-1 min-w-0 cursor-pointer" onClick={() => openForm(cat)}>
                         <div className="flex items-center gap-2">
                           <span className="text-sm font-medium text-slate-800">{cat.label}</span>
                           {!cat.required && <span className="text-xs bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-full">Optional</span>}
                         </div>
                         <span className="text-xs text-slate-400">{cat.description}</span>
                       </div>
-                      <div className="flex items-center gap-3 flex-shrink-0">
-                        {hasDat ? (
-                          <>
-                            <div className="flex items-center gap-1.5">
-                              <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                              <span className="text-sm font-semibold text-emerald-700">{hasDat.toFixed(3)} tCO₂e</span>
-                            </div>
-                            <span className="text-xs text-blue-600 font-medium opacity-0 group-hover:opacity-100 transition-opacity">+ Add more</span>
-                          </>
-                        ) : (
-                          <span className="text-xs text-blue-600 font-medium opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
-                            <Plus className="w-3.5 h-3.5" /> Add data
-                          </span>
-                        )}
-                        <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-slate-500 transition-colors" />
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        {hasDat && <span className="text-sm font-semibold text-emerald-700">{hasDat.toFixed(3)} tCO₂e</span>}
+                        {cat.num === 1 && <div className="flex gap-1">
+                          <button onClick={() => { setGhgProps({ scope: "Scope 3", category: "Capital Goods" }); setShowGHGDialog(true); }} className="text-xs bg-blue-50 text-blue-600 border border-blue-200 px-2 py-1 rounded-lg hover:bg-blue-100 flex items-center gap-1"><Plus className="w-3 h-3" /> Capital</button>
+                          <button onClick={() => { setGhgProps({ scope: "Scope 3", category: "Purchased Goods and Services" }); setShowGHGDialog(true); }} className="text-xs bg-emerald-50 text-emerald-600 border border-emerald-200 px-2 py-1 rounded-lg hover:bg-emerald-100 flex items-center gap-1"><Plus className="w-3 h-3" /> Operational</button>
+                        </div>}
+                        {cat.num === 2 && <button onClick={() => { setGhgProps({ scope: "Scope 3", category: "Capital Goods" }); setShowGHGDialog(true); }} className="text-xs bg-blue-50 text-blue-600 border border-blue-200 px-2 py-1 rounded-lg hover:bg-blue-100 flex items-center gap-1"><Plus className="w-3 h-3" /> Add</button>}
+                        {cat.num === 4 && <button onClick={() => { setTransportDir("Upstream"); setShowTransport(true); }} className="text-xs bg-blue-50 text-blue-600 border border-blue-200 px-2 py-1 rounded-lg hover:bg-blue-100 flex items-center gap-1"><Plus className="w-3 h-3" /> Add Upstream T&D</button>}
+                        {cat.num === 5 && <button onClick={() => setShowWaste(true)} className="text-xs bg-amber-50 text-amber-600 border border-amber-200 px-2 py-1 rounded-lg hover:bg-amber-100 flex items-center gap-1"><Plus className="w-3 h-3" /> Add Waste</button>}
+                        {cat.num === 6 && <div className="flex gap-1">
+                          <button onClick={() => { setTravelSub("Air Travel"); setShowTravelDialog(true); }} className="text-xs bg-blue-50 text-blue-600 border border-blue-200 px-1.5 py-1 rounded-lg hover:bg-blue-100">✈</button>
+                          <button onClick={() => { setTravelSub("Road & Rail"); setShowTravelDialog(true); }} className="text-xs bg-slate-50 text-slate-600 border border-slate-200 px-1.5 py-1 rounded-lg hover:bg-slate-100">🚗</button>
+                          <button onClick={() => { setTravelSub("Accommodation"); setShowTravelDialog(true); }} className="text-xs bg-purple-50 text-purple-600 border border-purple-200 px-1.5 py-1 rounded-lg hover:bg-purple-100">🏨</button>
+                        </div>}
+                        {cat.num === 8 && <button onClick={() => { setLeasedType("Upstream"); setShowLeased(true); }} className="text-xs bg-blue-50 text-blue-600 border border-blue-200 px-2 py-1 rounded-lg hover:bg-blue-100 flex items-center gap-1"><Plus className="w-3 h-3" /> Add</button>}
+                        {![1,2,4,5,6,8].includes(cat.num) && <span className="text-xs text-blue-600 font-medium opacity-0 group-hover:opacity-100 flex items-center gap-1 cursor-pointer" onClick={() => openForm(cat)}><Plus className="w-3.5 h-3.5" /> {hasDat ? "+ more" : "Add data"}</span>}
+                        <ChevronRight className="w-4 h-4 text-slate-300 cursor-pointer" onClick={() => openForm(cat)} />
                       </div>
                     </div>
                   );
                 })}
-              </div>
-            </div>
-          )}
+                </div>
+                </div>
+                )}
 
-          {/* Downstream group */}
+                {/* Downstream group */}
           {(activeTab === "all" || activeTab === "downstream") && (
             <div className="mt-4">
               <div className="flex items-center gap-2 mb-2">
@@ -362,34 +387,28 @@ export default function Scope3Categories() {
                 {filteredCats.filter(c => !c.upstream).map((cat, idx, arr) => {
                   const hasDat = totalByCategory[cat.num];
                   return (
-                    <div key={cat.num} className={`flex items-center gap-4 px-5 py-3.5 hover:bg-slate-50 transition-colors cursor-pointer group ${idx < arr.length - 1 ? "border-b border-slate-100" : ""}`}
-                      onClick={() => openForm(cat)}>
-                      <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0 ${hasDat ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-400"}`}>
-                        {cat.num}
-                      </div>
-                      <div className="flex-1 min-w-0">
+                    <div key={cat.num} className={`flex items-center gap-4 px-5 py-3.5 hover:bg-slate-50 transition-colors group ${idx < arr.length - 1 ? "border-b border-slate-100" : ""}`}>
+                      <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0 cursor-pointer ${hasDat ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-400"}`} onClick={() => openForm(cat)}>{cat.num}</div>
+                      <div className="flex-1 min-w-0 cursor-pointer" onClick={() => openForm(cat)}>
                         <div className="flex items-center gap-2">
                           <span className="text-sm font-medium text-slate-700">{cat.label}</span>
                           <span className="text-xs bg-slate-100 text-slate-400 px-1.5 py-0.5 rounded-full">Optional</span>
                         </div>
                         <span className="text-xs text-slate-400">{cat.description}</span>
                       </div>
-                      <div className="flex items-center gap-3 flex-shrink-0">
-                        {hasDat ? (
-                          <span className="text-sm font-semibold text-emerald-700">{hasDat.toFixed(3)} tCO₂e</span>
-                        ) : (
-                          <span className="text-xs text-blue-600 font-medium opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
-                            <Plus className="w-3.5 h-3.5" /> Add data
-                          </span>
-                        )}
-                        <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-slate-500 transition-colors" />
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        {hasDat && <span className="text-sm font-semibold text-emerald-700">{hasDat.toFixed(3)} tCO₂e</span>}
+                        {cat.num === 9 && <button onClick={() => { setTransportDir("Downstream"); setShowTransport(true); }} className="text-xs bg-blue-50 text-blue-600 border border-blue-200 px-2 py-1 rounded-lg hover:bg-blue-100 flex items-center gap-1"><Plus className="w-3 h-3" /> Add Downstream T&D</button>}
+                        {cat.num === 13 && <button onClick={() => { setLeasedType("Downstream"); setShowLeased(true); }} className="text-xs bg-blue-50 text-blue-600 border border-blue-200 px-2 py-1 rounded-lg hover:bg-blue-100 flex items-center gap-1"><Plus className="w-3 h-3" /> Add</button>}
+                        {![9,13].includes(cat.num) && <span className="text-xs text-blue-600 font-medium opacity-0 group-hover:opacity-100 flex items-center gap-1 cursor-pointer" onClick={() => openForm(cat)}><Plus className="w-3.5 h-3.5" /> {hasDat ? "+ more" : "Add data"}</span>}
+                        <ChevronRight className="w-4 h-4 text-slate-300 cursor-pointer" onClick={() => openForm(cat)} />
                       </div>
                     </div>
                   );
                 })}
-              </div>
-            </div>
-          )}
+                </div>
+                </div>
+                )}
 
           {activeTab === "measured" && filteredCats.length === 0 && (
             <div className="text-center py-12 bg-white border border-dashed border-slate-200 rounded-xl text-slate-500 text-sm">
@@ -491,6 +510,42 @@ export default function Scope3Categories() {
       {showForm && selectedCat && (
         <CategoryForm category={selectedCat} onClose={() => { setShowForm(false); setSelectedCat(null); }} onSaved={load} />
       )}
+
+      <GHGEntryDialog
+        open={showGHGDialog}
+        onClose={() => setShowGHGDialog(false)}
+        onSaved={load}
+        scope={ghgProps.scope || "Scope 3"}
+        category={ghgProps.category || ""}
+        defaultValues={{}}
+      />
+
+      <BusinessTravelDialog
+        open={showTravelDialog}
+        onClose={() => setShowTravelDialog(false)}
+        onSaved={load}
+        subCategory={travelSub}
+      />
+
+      <TransportationTieredDialog
+        open={showTransport}
+        onClose={() => setShowTransport(false)}
+        onSaved={load}
+        direction={transportDir}
+      />
+
+      <LeasedAssetsTieredDialog
+        open={showLeased}
+        onClose={() => setShowLeased(false)}
+        onSaved={load}
+        leaseType={leasedType}
+      />
+
+      <WasteReuseTieredDialog
+        open={showWaste}
+        onClose={() => setShowWaste(false)}
+        onSaved={load}
+      />
     </div>
   );
 }

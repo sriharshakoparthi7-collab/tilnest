@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { Plus, Car, Trash2, Edit2, X, Search, Upload } from "lucide-react";
+import { Plus, Car, Trash2, Edit2, X, Search, Upload, Activity } from "lucide-react";
+import VehicleEmissionsDialog from "../components/VehicleEmissionsDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -53,6 +54,8 @@ export default function VehicleRegistry() {
   const [fuelFilter, setFuelFilter] = useState("All");
   const [selected, setSelected] = useState(new Set());
   const [form, setForm] = useState(emptyForm);
+  const [showEmissions, setShowEmissions] = useState(false);
+  const [emissionsVehicle, setEmissionsVehicle] = useState(null);
 
   const load = async () => {
     const [vs, ls] = await Promise.all([base44.entities.Vehicle.list(), base44.entities.Location.list()]);
@@ -125,6 +128,9 @@ export default function VehicleRegistry() {
           )}
           <Button variant="outline" size="sm" onClick={() => setShowBulk(true)} className="gap-1.5">
             <Upload className="w-3.5 h-3.5" /> Bulk Upload
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => { setEmissionsVehicle(null); setShowEmissions(true); }} className="gap-1.5">
+            <Activity className="w-3.5 h-3.5" /> Log Emissions
           </Button>
           <Button size="sm" onClick={openAdd} className="gap-1.5">
             <Plus className="w-4 h-4" /> Add Vehicle
@@ -210,10 +216,11 @@ export default function VehicleRegistry() {
                     <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${v.status === "Active" ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>{v.status || "Active"}</span>
                   </td>
                   <td className="py-3 px-4">
-                    <div className="flex gap-1">
-                      <button onClick={() => openEdit(v)} className="p-1.5 rounded-lg hover:bg-slate-200 text-slate-400 hover:text-slate-700"><Edit2 className="w-3.5 h-3.5" /></button>
-                      <button onClick={() => remove(v.id)} className="p-1.5 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-500"><Trash2 className="w-3.5 h-3.5" /></button>
-                    </div>
+                   <div className="flex gap-1">
+                     <button onClick={() => { setEmissionsVehicle(v); setShowEmissions(true); }} className="p-1.5 rounded-lg hover:bg-emerald-50 text-slate-400 hover:text-emerald-600" title="Log Emissions"><Activity className="w-3.5 h-3.5" /></button>
+                     <button onClick={() => openEdit(v)} className="p-1.5 rounded-lg hover:bg-slate-200 text-slate-400 hover:text-slate-700"><Edit2 className="w-3.5 h-3.5" /></button>
+                     <button onClick={() => remove(v.id)} className="p-1.5 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-500"><Trash2 className="w-3.5 h-3.5" /></button>
+                   </div>
                   </td>
                 </tr>
               ))}
@@ -345,6 +352,13 @@ export default function VehicleRegistry() {
           </div>
         </div>
       )}
+
+      <VehicleEmissionsDialog
+        open={showEmissions}
+        onClose={() => { setShowEmissions(false); setEmissionsVehicle(null); }}
+        onSaved={load}
+        vehicle={emissionsVehicle}
+      />
 
       <BulkUploadModal
         open={showBulk}

@@ -82,6 +82,10 @@
       "type": "number",
       "title": "Scope 3 Cat 3 WTT (tCO2e)"
     },
+    "wtt_tco2e": {
+      "type": "number",
+      "title": "Well-to-Tank Emissions (tCO2e)"
+    },
     "calculation_method": {
       "type": "string",
       "title": "Calculation Method",
@@ -131,13 +135,45 @@
       "type": "string",
       "title": "Vehicle Type"
     },
+    "vehicle_id": {
+      "type": "string",
+      "title": "Vehicle ID"
+    },
+    "vehicle_class": {
+      "type": "string",
+      "title": "Vehicle Class"
+    },
     "fuel_type": {
       "type": "string",
       "title": "Fuel Type"
     },
+    "fuel_volume": {
+      "type": "number",
+      "title": "Fuel Volume"
+    },
+    "fuel_volume_unit": {
+      "type": "string",
+      "title": "Fuel Volume Unit"
+    },
+    "distance_traveled": {
+      "type": "number",
+      "title": "Distance Traveled"
+    },
+    "distance_unit": {
+      "type": "string",
+      "title": "Distance Unit",
+      "enum": [
+        "km",
+        "miles"
+      ]
+    },
     "equipment_type": {
       "type": "string",
       "title": "Equipment Type"
+    },
+    "equipment_id": {
+      "type": "string",
+      "title": "Equipment ID"
     },
     "s3_category_number": {
       "type": "number",
@@ -158,6 +194,10 @@
     "supplier_emission_factor": {
       "type": "number",
       "title": "Supplier Emission Factor (kgCO2e/unit)"
+    },
+    "supplier_emission_factor_market_based": {
+      "type": "number",
+      "title": "Supplier Market-Based Emission Factor (kgCO2e/kWh)"
     },
     "pcf_epd_document_url": {
       "type": "string",
@@ -326,37 +366,13 @@
       "type": "number",
       "title": "Provider Emission Factor"
     },
-    "vehicle_id": {
-      "type": "string",
-      "title": "Vehicle ID"
-    },
-    "vehicle_class": {
-      "type": "string",
-      "title": "Vehicle Class"
-    },
-    "fuel_volume": {
+    "cbps_electrical_intensity_factor_used": {
       "type": "number",
-      "title": "Fuel Volume"
+      "title": "CBPS Electrical Intensity Factor Used (kWh/m\u00b2)"
     },
-    "fuel_volume_unit": {
-      "type": "string",
-      "title": "Fuel Volume Unit"
-    },
-    "distance_traveled": {
+    "cbps_gas_intensity_factor_used": {
       "type": "number",
-      "title": "Distance Traveled"
-    },
-    "distance_unit": {
-      "type": "string",
-      "title": "Distance Unit",
-      "enum": [
-        "km",
-        "miles"
-      ]
-    },
-    "wtt_tco2e": {
-      "type": "number",
-      "title": "Well-to-Tank Emissions (tCO2e)"
+      "title": "CBPS Gas Intensity Factor Used (MJ/m\u00b2)"
     },
     "product_name": {
       "type": "string",
@@ -389,6 +405,14 @@
     "gwp_leakage_kg": {
       "type": "number",
       "title": "Annual GWP Leakage (kg/unit)"
+    },
+    "gwp_value_used": {
+      "type": "number",
+      "title": "GWP Value Used (IPCC AR6)"
+    },
+    "default_annual_leak_rate_percentage": {
+      "type": "number",
+      "title": "Default Annual Leak Rate (%)"
     },
     "eol_waste_kg": {
       "type": "number",
@@ -463,7 +487,11 @@
     },
     "pcaf_data_quality": {
       "type": "number",
-      "title": "PCAF Data Quality Score (1-5)"
+      "title": "PCAF Data Quality Score S1+2 (1-5)"
+    },
+    "pcaf_s3_score": {
+      "type": "number",
+      "title": "PCAF Data Quality Score S3 (1-5)"
     },
     "insurance_premium_usd": {
       "type": "number",
@@ -476,6 +504,98 @@
     "financed_tco2e": {
       "type": "number",
       "title": "Financed Emissions (tCO2e)"
+    },
+    "utility_invoice_url": {
+      "type": "string",
+      "title": "Utility Invoice / Bill URL"
+    },
+    "fuel_card_receipt_url": {
+      "type": "string",
+      "title": "Fuel Card Receipt URL"
+    },
+    "provider_document_url": {
+      "type": "string",
+      "title": "Provider Report / Document URL"
+    },
+    "maintenance_report_url": {
+      "type": "string",
+      "title": "Maintenance Report URL"
+    },
+    "exact_fuel_volume": {
+      "type": "number",
+      "title": "Exact Fuel Volume (L)"
+    },
+    "assumed_efficiency_factor": {
+      "type": "number",
+      "title": "Assumed Efficiency Factor (L/100km)"
+    },
+    "machine_operating_hours": {
+      "type": "number",
+      "title": "Machine Operating Hours"
+    },
+    "machine_power_rating_kw": {
+      "type": "number",
+      "title": "Machine Power Rating (kW)"
+    },
+    "load_factor_percentage": {
+      "type": "number",
+      "title": "Load Factor (%)"
+    },
+    "customer_reported_energy_kwh": {
+      "type": "number",
+      "title": "Customer Reported Energy (kWh)"
+    },
+    "downstream_process_type": {
+      "type": "string",
+      "title": "Downstream Process Type"
+    },
+    "total_revenue_generated": {
+      "type": "number",
+      "title": "Total Revenue Generated (USD)"
+    },
+    "flight_id": {
+      "type": "string",
+      "title": "Flight ID / Reference"
+    },
+    "origin_airport_iata": {
+      "type": "string",
+      "title": "Origin Airport (IATA Code)"
+    },
+    "destination_airport_iata": {
+      "type": "string",
+      "title": "Destination Airport (IATA Code)"
+    },
+    "rf_multiplier_flag": {
+      "type": "boolean",
+      "title": "Radiative Forcing Multiplier Applied"
+    },
+    "hotel_name": {
+      "type": "string",
+      "title": "Hotel Name"
+    },
+    "market_area": {
+      "type": "string",
+      "title": "Market Area / City"
+    },
+    "number_of_rooms": {
+      "type": "number",
+      "title": "Number of Rooms"
+    },
+    "hotel_star_rating": {
+      "type": "string",
+      "title": "Hotel Star Rating / Segment"
+    },
+    "number_of_nights": {
+      "type": "number",
+      "title": "Number of Nights"
+    },
+    "cabin_class": {
+      "type": "string",
+      "title": "Cabin Class"
+    },
+    "scope3_3_tco2e": {
+      "type": "number",
+      "title": "Scope 3.3 Upstream Energy (tCO2e)"
     }
   },
   "required": [

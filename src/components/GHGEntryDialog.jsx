@@ -306,7 +306,41 @@ export default function GHGEntryDialog({ open, onClose, onSaved, scope, category
     if (form.port_of_loading) data.port_of_loading = form.port_of_loading;
     if (form.destination_address) data.destination_address = form.destination_address;
     if (defaultValues.id) await base44.entities.EmissionEntry.update(defaultValues.id, data);
-    else await base44.entities.EmissionEntry.create(data);
+    else {
+      await base44.entities.EmissionEntry.create(data);
+      // Incoterm-triggered Cat 4 separate record
+      if (isGoods && form.transport_incoterm !== "DDP" && calcTransport(form) > 0) {
+        const cat4tco2e = calcTransport(form);
+        const mf = TRANSPORT_MODE_FACTORS[form.transport_mode] || 0.096;
+        const tkm = (parseFloat(form.transport_kg) || 0) / 1000 * (parseFloat(form.transport_distance) || 0);
+        await base44.entities.EmissionEntry.create({
+          scope: "Scope 3",
+          category: "Upstream Transportation & Distribution",
+          s3_category_number: 4,
+          sub_category: `${form.transport_incoterm} — Upstream Freight`,
+          source_name: `${form.source_name || data.supplier || "Freight"} (Cat 4 — ${form.transport_incoterm})`,
+          location_id: form.location_id,
+          location_name: loc?.name || "",
+          supplier: data.supplier,
+          start_date: form.start_date,
+          shipment_weight_kg: parseFloat(form.transport_kg) || undefined,
+          transport_mode: form.transport_mode,
+          transport_distance_km: parseFloat(form.transport_distance) || undefined,
+          tonne_km: parseFloat(tkm.toFixed(4)),
+          cat4_tco2e: parseFloat(cat4tco2e.toFixed(6)),
+          origin_address: form.origin_address || undefined,
+          destination_address: form.transport_incoterm === "FOB" ? undefined : (form.destination_address || undefined),
+          port_of_loading: form.transport_incoterm === "FOB" ? (form.port_of_loading || undefined) : undefined,
+          incoterm: form.transport_incoterm,
+          tco2e: parseFloat(cat4tco2e.toFixed(6)),
+          calculation_method: `Tonne-km: ${tkm.toFixed(2)} × ${mf} kgCO₂e/tkm — auto from ${form.transport_incoterm} incoterm`,
+          data_quality_tier: "tier2",
+          data_quality_score: 7,
+          reporting_year: 2024,
+          status: form.status,
+        });
+      }
+    }
     setSaving(false);
     onSaved();
     onClose();
