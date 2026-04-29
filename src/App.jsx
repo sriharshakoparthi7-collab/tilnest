@@ -16,6 +16,8 @@ import DataManagement from './pages/DataManagement';
 import SupplyChain from './pages/SupplyChain';
 import VehicleRegistry from './pages/VehicleRegistry';
 import Equipment from './pages/Equipment';
+import MaterialityAssessments from './pages/MaterialityAssessments';
+import MaterialityDetail from './pages/MaterialityDetail';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -67,6 +69,8 @@ const AuthenticatedApp = () => {
         <Route path="/supply-chain" element={<SupplyChain />} />
         <Route path="/vehicles" element={<VehicleRegistry />} />
         <Route path="/equipment" element={<Equipment />} />
+        <Route path="/materiality" element={<MaterialityAssessments />} />
+        <Route path="/materiality/:id" element={<MaterialityDetail />} />
         <Route path="*" element={<Dashboard />} />
       </Route>
       </Routes>

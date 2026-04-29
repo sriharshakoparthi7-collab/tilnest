@@ -3,7 +3,7 @@ import { useState } from "react";
 import {
   LayoutDashboard, Globe, Zap, Car, ShoppingBag, Trash2, Users, Wind, Droplets,
   MoreHorizontal, Leaf, BarChart3, Link2, ChevronDown,
-  ChevronRight, Building2, Menu, Package, TrendingUp, MapPin
+  ChevronRight, Building2, Menu, Package, TrendingUp, MapPin, Target
 } from "lucide-react";
 
 const ENV_ITEMS = [
@@ -32,6 +32,7 @@ const NAV_ITEMS = [
     label: "Emissions", icon: Globe, type: "group", children: ENV_ITEMS,
     matchPaths: ["/environment"]
   },
+  { label: "Materiality Assessment", icon: Target, path: "/materiality", type: "link" },
   { label: "Reports", icon: BarChart3, path: "/reports", type: "link" },
   { label: "Supply chain", icon: Package, path: "/supply-chain", type: "link" },
 ];
@@ -109,7 +110,7 @@ export default function Layout() {
             );
           }
 
-          const active = isActive(item.path);
+          const active = isActive(item.path) || (item.path !== "/" && location.pathname.startsWith(item.path));
           return (
             <Link
               key={item.path}

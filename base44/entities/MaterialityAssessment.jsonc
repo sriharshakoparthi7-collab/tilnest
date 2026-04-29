@@ -1,0 +1,119 @@
+{
+  "name": "MaterialityAssessment",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "title": "Assessment Name"
+    },
+    "assessment_year": {
+      "type": "number",
+      "title": "Assessment Year"
+    },
+    "company_name": {
+      "type": "string",
+      "title": "Company Name"
+    },
+    "industry_description": {
+      "type": "string",
+      "title": "Industry Description"
+    },
+    "industry_code": {
+      "type": "string",
+      "title": "Industry Code (GICS/NACE)"
+    },
+    "industry_confidence": {
+      "type": "number",
+      "title": "NLP Confidence Score"
+    },
+    "is_manual_industry_override": {
+      "type": "boolean",
+      "title": "Manual Industry Override"
+    },
+    "country": {
+      "type": "string",
+      "title": "Country / Region"
+    },
+    "assessment_framework": {
+      "type": "string",
+      "title": "Assessment Framework",
+      "enum": [
+        "GRI",
+        "ISSB",
+        "ESRS"
+      ]
+    },
+    "materiality_approach": {
+      "type": "string",
+      "title": "Materiality Approach",
+      "enum": [
+        "single_impact",
+        "single_financial",
+        "double_materiality"
+      ]
+    },
+    "status": {
+      "type": "string",
+      "title": "Status",
+      "enum": [
+        "draft",
+        "in_progress",
+        "ready_for_review",
+        "approved",
+        "rejected"
+      ],
+      "default": "draft"
+    },
+    "board_approval_status": {
+      "type": "string",
+      "title": "Board Approval Status",
+      "enum": [
+        "pending",
+        "approved",
+        "rejected"
+      ],
+      "default": "pending"
+    },
+    "board_approved_by": {
+      "type": "string",
+      "title": "Board Approved By"
+    },
+    "board_approved_at": {
+      "type": "string",
+      "format": "date",
+      "title": "Board Approved At"
+    },
+    "board_approval_notes": {
+      "type": "string",
+      "title": "Board Approval Notes"
+    },
+    "impact_threshold": {
+      "type": "number",
+      "title": "Impact Threshold",
+      "default": 3.0
+    },
+    "financial_threshold": {
+      "type": "number",
+      "title": "Financial Threshold",
+      "default": 3.0
+    },
+    "threshold_justification": {
+      "type": "string",
+      "title": "Threshold Justification"
+    },
+    "current_phase": {
+      "type": "number",
+      "title": "Current Phase (1-6)",
+      "default": 1
+    },
+    "notes": {
+      "type": "string",
+      "title": "Notes"
+    }
+  },
+  "required": [
+    "name",
+    "assessment_year",
+    "company_name"
+  ]
+}

@@ -1,0 +1,46 @@
+{
+  "name": "ValueChainActivity",
+  "type": "object",
+  "properties": {
+    "assessment_id": {
+      "type": "string",
+      "title": "Assessment ID"
+    },
+    "activity_name": {
+      "type": "string",
+      "title": "Activity Name"
+    },
+    "segment": {
+      "type": "string",
+      "title": "Segment",
+      "enum": [
+        "upstream",
+        "direct_operations",
+        "downstream"
+      ]
+    },
+    "is_auto_generated": {
+      "type": "boolean",
+      "title": "Auto Generated"
+    },
+    "sustainability_topics": {
+      "type": "array",
+      "title": "Sustainability Topics",
+      "items": {
+        "type": "string"
+      }
+    },
+    "esrs_references": {
+      "type": "array",
+      "title": "ESRS References",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "assessment_id",
+    "activity_name",
+    "segment"
+  ]
+}

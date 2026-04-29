@@ -1,0 +1,141 @@
+{
+  "name": "IRORegister",
+  "type": "object",
+  "properties": {
+    "assessment_id": {
+      "type": "string",
+      "title": "Assessment ID"
+    },
+    "topic_name": {
+      "type": "string",
+      "title": "Topic / IRO Name"
+    },
+    "iro_type": {
+      "type": "string",
+      "title": "IRO Type",
+      "enum": [
+        "impact_positive",
+        "impact_negative",
+        "risk",
+        "opportunity"
+      ]
+    },
+    "value_chain_activities": {
+      "type": "array",
+      "title": "Value Chain Activities",
+      "items": {
+        "type": "string"
+      }
+    },
+    "status": {
+      "type": "string",
+      "title": "Status",
+      "enum": [
+        "actual",
+        "potential"
+      ]
+    },
+    "time_horizon": {
+      "type": "string",
+      "title": "Time Horizon",
+      "enum": [
+        "short_term",
+        "medium_term",
+        "long_term"
+      ]
+    },
+    "esrs_reference": {
+      "type": "string",
+      "title": "ESRS Reference"
+    },
+    "assigned_to_sme": {
+      "type": "string",
+      "title": "Assigned to SME (email)"
+    },
+    "severity_scale": {
+      "type": "number",
+      "title": "Severity \u2014 Scale (1-5)"
+    },
+    "severity_scope": {
+      "type": "number",
+      "title": "Severity \u2014 Scope (1-5)"
+    },
+    "severity_remediability": {
+      "type": "number",
+      "title": "Severity \u2014 Remediability (1-5)"
+    },
+    "severity_value": {
+      "type": "number",
+      "title": "Severity Value (max of above)"
+    },
+    "likelihood_score": {
+      "type": "number",
+      "title": "Likelihood Score (1-5)"
+    },
+    "stakeholder_input_score": {
+      "type": "number",
+      "title": "Stakeholder Input Score"
+    },
+    "impact_score": {
+      "type": "number",
+      "title": "Impact Score"
+    },
+    "financial_magnitude_score": {
+      "type": "number",
+      "title": "Financial Magnitude (1-5)"
+    },
+    "financial_likelihood_score": {
+      "type": "number",
+      "title": "Financial Likelihood (1-5)"
+    },
+    "financial_score": {
+      "type": "number",
+      "title": "Financial Score"
+    },
+    "composite_score": {
+      "type": "number",
+      "title": "Composite Score"
+    },
+    "materiality_level": {
+      "type": "string",
+      "title": "Materiality Level",
+      "enum": [
+        "highly_material",
+        "material",
+        "potentially_material",
+        "low_materiality"
+      ]
+    },
+    "financial_uncertainty_tier": {
+      "type": "string",
+      "title": "Financial Uncertainty Tier",
+      "enum": [
+        "tier_1_qualitative",
+        "tier_2_percentage_bands",
+        "tier_3_quantitative"
+      ]
+    },
+    "financial_uncertainty_data": {
+      "type": "string",
+      "title": "Financial Uncertainty Data (JSON)"
+    },
+    "financial_risk_rating": {
+      "type": "string",
+      "title": "Financial Risk Rating",
+      "enum": [
+        "high",
+        "medium",
+        "low"
+      ]
+    },
+    "notes": {
+      "type": "string",
+      "title": "Notes"
+    }
+  },
+  "required": [
+    "assessment_id",
+    "topic_name",
+    "iro_type"
+  ]
+}

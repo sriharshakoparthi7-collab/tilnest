@@ -1,0 +1,60 @@
+{
+  "name": "StakeholderGroup",
+  "type": "object",
+  "properties": {
+    "assessment_id": {
+      "type": "string",
+      "title": "Assessment ID"
+    },
+    "name": {
+      "type": "string",
+      "title": "Stakeholder Group Name"
+    },
+    "engagement_method": {
+      "type": "string",
+      "title": "Engagement Method",
+      "enum": [
+        "Survey",
+        "Interview",
+        "Workshop",
+        "Focus Group",
+        "Other"
+      ]
+    },
+    "engagement_frequency": {
+      "type": "string",
+      "title": "Engagement Frequency",
+      "enum": [
+        "Weekly",
+        "Monthly",
+        "Quarterly",
+        "Annual",
+        "Ad-hoc"
+      ]
+    },
+    "influence_score": {
+      "type": "number",
+      "title": "Influence Score (1-5)"
+    },
+    "interest_score": {
+      "type": "number",
+      "title": "Interest Score (1-5)"
+    },
+    "prioritization_score": {
+      "type": "number",
+      "title": "Prioritization Score (Influence \u00d7 Interest)"
+    },
+    "survey_respondent_count": {
+      "type": "number",
+      "title": "Survey Respondent Count"
+    },
+    "notes": {
+      "type": "string",
+      "title": "Notes"
+    }
+  },
+  "required": [
+    "assessment_id",
+    "name"
+  ]
+}
