@@ -1,11 +1,10 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { X, Info, ChevronDown, ChevronUp, Leaf, Ban } from "lucide-react";
+import { X, Info, ChevronDown, ChevronUp, Leaf } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import EmissionFactorSelector from "@/components/emissions/EmissionFactorSelector";
 
 // ─── Postcode → NCC Climate Zone mapping (AU) ─────────────────────────────
 const postcodeToNCCZone = (postcode) => {
@@ -81,20 +80,19 @@ const REFRIGERANT_GWP = {
 };
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
-function calcTier(tier, form, selectedEF, efAdjustment) {
+function calcTier(tier, form) {
   if (tier === "tier1") return { tco2e: parseFloat(form.primary_tco2e) || 0, score: 10, method: "Tier 1 - Primary LCA/EPD" };
   if (tier === "tier2") {
     const assembly = (parseFloat(form.supplier_s1s2) || 0) * (parseFloat(form.alloc_pct) || 100) / 100 / 1000;
     return { tco2e: assembly, score: 8, method: "Tier 2 - Hybrid/Proxy" };
   }
   if (tier === "tier3") {
-    const factor = selectedEF?.value || MATERIAL_FACTORS[form.material_type] || 1.0;
+    const factor = MATERIAL_FACTORS[form.material_type] || 1.0;
     const tco2e = (parseFloat(form.material_mass_kg) || 0) * factor / 1000;
     return { tco2e, score: 6, method: "Tier 3 - BOM + Industry Averages" };
   }
-  const sf = selectedEF?.value || SECTOR_FACTORS[form.sector] || 0.35;
-    const adjustedSpend = efAdjustment?.adjustedSpend || parseFloat(form.spend) || 0;
-    const tco2e = adjustedSpend * sf * 1.1 / 1000;
+  const sf = SECTOR_FACTORS[form.sector] || 0.35;
+  const tco2e = (parseFloat(form.spend) || 0) * sf * 1.1 / 1000;
   return { tco2e, score: 2, method: "Tier 4 - Spend-based" };
 }
 
@@ -104,8 +102,8 @@ function calcTransport(form) {
   return (parseFloat(form.transport_kg) || 0) / 1000 * (parseFloat(form.transport_distance) || 0) * mf / 1000;
 }
 
-function calcWaste(form, selectedEF) {
-  const wf = selectedEF?.value || AUS_WASTE_FACTORS[form.waste_type] || 1.91;
+function calcWaste(form) {
+  const wf = AUS_WASTE_FACTORS[form.waste_type] || 1.91;
   const qty = parseFloat(form.waste_quantity_kg) || 0;
   const emitted = qty * wf / 1000;
   const mat = form.material_type || "General";
@@ -128,9 +126,6 @@ export default function GHGEntryDialog({ open, onClose, onSaved, scope, category
   const [saving, setSaving] = useState(false);
   const [showAudit, setShowAudit] = useState(false);
   const [goodsSubcat, setGoodsSubcat] = useState(defaultValues.sub_category || "purchased_goods");
-  const [selectedEF, setSelectedEF] = useState(null);
-  const [noDataFlagged, setNoDataFlagged] = useState(false);
-  const [efAdjustment, setEfAdjustment] = useState(null);
 
   const isGoods = category?.includes("Goods") || category?.includes("Capital");
   const isWaste = category?.includes("Waste") || category?.includes("End-of-Life");
@@ -173,28 +168,14 @@ export default function GHGEntryDialog({ open, onClose, onSaved, scope, category
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
-  // Determine EF library category from dialog context
-  const efCategory = isEnergy ? (scope === "Scope 2" ? "energy" : "fuel")
-    : isTravel ? "travel"
-    : isCommute ? "commute"
-    : isRefrig ? "refrigerant"
-    : isWaste ? "waste"
-    : isHeatSteam ? "heat_steam"
-    : isProcess ? "process"
-    : isWater ? "water"
-    : isGoods ? (form.tier === "tier4" ? "spend_based" : "material")
-    : null;
-
   useEffect(() => { base44.entities.Location.list().then(setLocations); }, []);
   useEffect(() => { setForm(f => ({ ...f, ...defaultValues })); }, [open]);
 
   // ─── Compute preview ────────────────────────────────────────────────────────
   let result = { tco2e: 0, score: 5, method: "Activity-based", audit: [], categorySplit: {}, avoided: 0, allocationDriver: "" };
 
-  if (noDataFlagged) {
-    result = { tco2e: 0, score: 0, method: "No Data Available — Flagged for follow-up", audit: ["No emission factor available for this activity"], categorySplit: {}, avoided: 0, allocationDriver: "" };
-  } else if (isGoods) {
-    const tier = calcTier(form.tier, form, selectedEF, efAdjustment);
+  if (isGoods) {
+    const tier = calcTier(form.tier, form);
     const transport = form.transport_incoterm !== "DDP" ? calcTransport(form) : 0;
     result.tco2e = tier.tco2e + transport;
     result.score = tier.score;
@@ -203,7 +184,7 @@ export default function GHGEntryDialog({ open, onClose, onSaved, scope, category
     result.allocationDriver = form.alloc_driver;
     result.audit = ["GHG Protocol Corporate Standard", "IPCC AR6", tier.score >= 6 ? "ECOINVENT 3.10" : "Exiobase MRIO", "AUS NGA Factors"];
   } else if (isWaste) {
-    const w = calcWaste(form, selectedEF);
+    const w = calcWaste(form);
     result.tco2e = w.net;
     result.score = 7;
     result.method = "AUS NGA + C2C Circularity";
@@ -211,14 +192,14 @@ export default function GHGEntryDialog({ open, onClose, onSaved, scope, category
     result.avoided = w.avoided;
     result.audit = ["Australian NGA Factors 2024", "GHG Protocol Cat 12", "AUS Recycling Recovery Rates"];
   } else if (isTravel) {
-    const tf = selectedEF?.value || TRAVEL_FACTORS[form.travel_type] || 0.195;
+    const tf = TRAVEL_FACTORS[form.travel_type] || 0.195;
     result.tco2e = (parseFloat(form.travel_distance_km) || 0) * tf / 1000;
     result.score = 7;
     result.method = "Distance-based · DEFRA/ICAO";
     result.categorySplit = { "Cat 6 (Business Travel)": result.tco2e.toFixed(4) };
     result.audit = ["DEFRA GHG Factors 2024", "ICAO Carbon Calculator", "GHG Protocol Cat 6"];
   } else if (isCommute) {
-    const cf = selectedEF?.value || COMMUTE_FACTORS[form.commute_mode] || 0.17;
+    const cf = COMMUTE_FACTORS[form.commute_mode] || 0.17;
     const days = parseFloat(form.commute_days) || 0;
     result.tco2e = days * 2 * 20 * cf / 1000;
     result.score = 5;
@@ -226,7 +207,7 @@ export default function GHGEntryDialog({ open, onClose, onSaved, scope, category
     result.categorySplit = { "Cat 7 (Employee Commuting)": result.tco2e.toFixed(4) };
     result.audit = ["DEFRA GHG Factors 2024", "GHG Protocol Cat 7"];
   } else if (isRefrig) {
-    const gwp = selectedEF?.value || REFRIGERANT_GWP[form.refrigerant_gas] || 2088;
+    const gwp = REFRIGERANT_GWP[form.refrigerant_gas] || 2088;
     result.tco2e = (parseFloat(form.refrigerant_kg) || 0) * gwp / 1000;
     result.score = 9;
     result.method = "Fugitive · IPCC AR6 GWP";
@@ -244,14 +225,13 @@ export default function GHGEntryDialog({ open, onClose, onSaved, scope, category
       result.categorySplit = { [scope]: result.tco2e.toFixed(4) };
       result.audit = ["CBPS Intensity Tables", "NCC Climate Zone Data", "Australian NGA 2024"];
     } else if (energyTier === "tier4") {
-      const adjustedEnergySpend = efAdjustment?.adjustedSpend || parseFloat(form.amount_paid) || 0;
-      result.tco2e = adjustedEnergySpend * (selectedEF?.value || 0.0025);
+      result.tco2e = (parseFloat(form.amount_paid) || 0) * 0.0025;
       result.score = 2;
       result.method = "Spend-based · EEIO";
       result.categorySplit = { [scope]: result.tco2e.toFixed(4) };
       result.audit = ["EEIO Database", "Spend-based estimation"];
     } else {
-      const ef = selectedEF?.value || ENERGY_FACTORS[form.energy_type] || 0.79;
+      const ef = ENERGY_FACTORS[form.energy_type] || 0.79;
       const greenAdj = 1 - (parseFloat(form.green_power_pct) || 0) / 100;
       result.tco2e = (parseFloat(form.quantity) || 0) * ef * greenAdj / 1000;
       result.score = energyTier === "tier1" ? 9 : 7;
@@ -260,7 +240,7 @@ export default function GHGEntryDialog({ open, onClose, onSaved, scope, category
       result.audit = ["Australian NGA 2024", "AEMO Grid Emissions", "GHG Protocol Scope 2 Guidance"];
     }
   } else if (isWater) {
-    result.tco2e = (parseFloat(form.water_m3) || 0) * (selectedEF?.value || 0.344) / 1000;
+    result.tco2e = (parseFloat(form.water_m3) || 0) * 0.344 / 1000;
     result.score = 6;
     result.method = "Water treatment factor · NGA";
     result.categorySplit = { "Scope 3 Water": result.tco2e.toFixed(4) };
@@ -268,7 +248,7 @@ export default function GHGEntryDialog({ open, onClose, onSaved, scope, category
   } else if (isHeatSteam) {
     const HEAT_EF = { "Steam": 0.268, "Heat (District)": 0.210, "Chilled Water": 0.132 };
     if (form.heat_steam_tier === "tier1") {
-      const ef = selectedEF?.value || parseFloat(form.heat_provider_ef) || HEAT_EF[form.heat_energy_type] || 0.268;
+      const ef = parseFloat(form.heat_provider_ef) || HEAT_EF[form.heat_energy_type] || 0.268;
       result.tco2e = (parseFloat(form.heat_quantity) || 0) * ef / 1000;
       result.score = 9;
       result.method = `Provider-specific · ${form.heat_energy_type} · ${ef} kgCO₂e/GJ`;
@@ -284,7 +264,7 @@ export default function GHGEntryDialog({ open, onClose, onSaved, scope, category
     result.categorySplit = { ["Scope 2"]: result.tco2e.toFixed(4) };
     result.audit = ["IEA District Energy Factors", "GHG Protocol Scope 2 Guidance", "CBPS/NCC Intensity Tables"];
   } else if (isProcess) {
-    result.tco2e = (parseFloat(form.process_mass) || 0) * (selectedEF?.value || parseFloat(form.process_ef) || 0);
+    result.tco2e = (parseFloat(form.process_mass) || 0) * (parseFloat(form.process_ef) || 0);
     result.score = 9;
     result.method = `Stoichiometric: ${form.process_mass || 0} t × ${form.process_ef || 0} tCO₂e/t`;
     result.categorySplit = { "Scope 1 Process": result.tco2e.toFixed(4) };
@@ -294,8 +274,7 @@ export default function GHGEntryDialog({ open, onClose, onSaved, scope, category
   const save = async () => {
     setSaving(true);
     const loc = locations.find(l => l.id === form.location_id);
-    const efInfo = selectedEF ? ` | EF Source: ${selectedEF.source} (${selectedEF.country}, ${selectedEF.year}) | EF Value: ${selectedEF.value} ${selectedEF.unit}` : "";
-    const auditNote = `Method: ${result.method} | Quality: ${result.score}/10 | Split: ${JSON.stringify(result.categorySplit)} | Databases: ${result.audit.join(", ")}${efInfo}${noDataFlagged ? " | FLAGGED: No Data Available" : ""}`;
+    const auditNote = `Method: ${result.method} | Quality: ${result.score}/10 | Split: ${JSON.stringify(result.categorySplit)} | Databases: ${result.audit.join(", ")}`;
     const data = {
       scope, category,
       sub_category: isGoods ? (goodsSubcat === "capital_goods" ? "Capital Goods" : "Purchased Goods & Services") : undefined,
@@ -315,10 +294,6 @@ export default function GHGEntryDialog({ open, onClose, onSaved, scope, category
       status: form.status,
       green_power_pct: parseFloat(form.green_power_pct) || undefined,
       reporting_year: 2024,
-      emission_factor: selectedEF?.value || undefined,
-      data_quality_tier: selectedEF ? `tier${selectedEF.qualityTier}` : (noDataFlagged ? "tier4" : undefined),
-      data_quality_score: selectedEF ? (selectedEF.qualityTier === 1 ? 10 : selectedEF.qualityTier === 2 ? 8 : selectedEF.qualityTier === 3 ? 6 : 2) : (noDataFlagged ? 0 : undefined),
-      tags: noDataFlagged ? ["no-data"] : undefined,
     };
     if (isHeatSteam) {
       data.scope = "Scope 2";
@@ -524,25 +499,6 @@ export default function GHGEntryDialog({ open, onClose, onSaved, scope, category
             <Label className="text-sm font-medium">Supplier / Vendor</Label>
             <Input className="mt-1" placeholder="Supplier name" value={form.supplier} onChange={e => set("supplier", e.target.value)} />
           </div>
-
-          {/* ── EMISSION FACTOR SELECTOR ── */}
-          {/* Facility-level: auto-applies EFs based on selected location's country */}
-          {/* Filtering: by country + year | Currency & inflation: auto-adjusts spend-based EFs */}
-          {/* No data flag + custom EF entry built into selector */}
-          {efCategory && (
-            <EmissionFactorSelector
-              category={efCategory}
-              locationId={form.location_id}
-              locations={locations}
-              reportingYear={2024}
-              spendCurrency={form.currency}
-              spendAmount={form.amount_paid || form.spend}
-              selectedFactorId={selectedEF?.id}
-              onSelect={(factor, adj) => { setSelectedEF(factor); setEfAdjustment(adj); }}
-              onNoData={setNoDataFlagged}
-              noDataFlagged={noDataFlagged}
-            />
-          )}
 
           {/* ── GOODS & SERVICES ── */}
           {isGoods && (
@@ -1156,21 +1112,8 @@ export default function GHGEntryDialog({ open, onClose, onSaved, scope, category
             <Input className="mt-1" placeholder="Additional context..." value={form.notes} onChange={e => set("notes", e.target.value)} />
           </div>
 
-          {/* ── No Data Banner ── */}
-          {noDataFlagged && (
-            <div className="bg-red-50 border border-red-200 rounded-xl p-4">
-              <div className="flex items-center gap-2">
-                <Ban className="w-5 h-5 text-red-500 flex-shrink-0" />
-                <div>
-                  <div className="text-sm font-semibold text-red-700">No Data Available — Flagged for Follow-up</div>
-                  <div className="text-xs text-red-600 mt-0.5">This entry will be saved with 0 emissions and tagged "no-data" for follow-up. The audit trail will record that no emission factor was available.</div>
-                </div>
-              </div>
-            </div>
-          )}
-
           {/* ── Results Preview ── */}
-          {previewQuantity > 0 && !noDataFlagged && (
+          {previewQuantity > 0 && (
             <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 space-y-2">
               <div className="flex items-center justify-between">
                 <div>
@@ -1210,7 +1153,7 @@ export default function GHGEntryDialog({ open, onClose, onSaved, scope, category
 
         <div className="flex justify-between items-center p-6 border-t border-slate-100">
           <Button variant="ghost" onClick={onClose}>Cancel</Button>
-          <Button onClick={save} disabled={saving || (previewQuantity === 0 && !noDataFlagged)}>
+          <Button onClick={save} disabled={saving || previewQuantity === 0}>
             {saving ? "Saving..." : "Save Entry"}
           </Button>
         </div>
