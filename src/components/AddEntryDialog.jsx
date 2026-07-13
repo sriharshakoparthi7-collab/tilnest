@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { X } from "lucide-react";
+import { X, Ban } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import EmissionFactorSelector from "@/components/emissions/EmissionFactorSelector";
 
 // Simplified emission factors (kg CO2e per unit)
 const EMISSION_FACTORS = {
@@ -25,13 +26,19 @@ export default function AddEntryDialog({ open, onClose, onSaved, scope, category
     fuel_type: "", vehicle_type: "", ...defaultValues
   });
   const [saving, setSaving] = useState(false);
+  const [selectedEF, setSelectedEF] = useState(null);
+  const [noDataFlagged, setNoDataFlagged] = useState(false);
+  const [efAdjustment, setEfAdjustment] = useState(null);
+
+  const efCategory = scope === "Scope 2" ? "energy" : scope === "Scope 1" ? "fuel" : "spend_based";
 
   useEffect(() => { base44.entities.Location.list().then(setLocations); }, []);
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
   const calcEmissions = () => {
-    const factor = EMISSION_FACTORS[`${form.fuel_type || "Electricity"} (${form.unit})`] || 0.233;
+    if (noDataFlagged) return 0;
+    const factor = selectedEF?.value || EMISSION_FACTORS[`${form.fuel_type || "Electricity"} (${form.unit})`] || 0.233;
     return ((parseFloat(form.quantity) || 0) * factor) / 1000;
   };
 
@@ -49,6 +56,10 @@ export default function AddEntryDialog({ open, onClose, onSaved, scope, category
       amount_paid: parseFloat(form.amount_paid) || undefined,
       green_power_pct: parseFloat(form.green_power_pct) || undefined,
       tco2e: parseFloat(tco2e.toFixed(6)),
+      emission_factor: selectedEF?.value || undefined,
+      data_quality_tier: selectedEF ? `tier${selectedEF.qualityTier}` : undefined,
+      data_quality_score: selectedEF ? (selectedEF.qualityTier === 1 ? 10 : selectedEF.qualityTier === 2 ? 8 : selectedEF.qualityTier === 3 ? 6 : 2) : undefined,
+      tags: noDataFlagged ? ["no-data"] : undefined,
     };
     if (defaultValues.id) await base44.entities.EmissionEntry.update(defaultValues.id, data);
     else await base44.entities.EmissionEntry.create(data);
@@ -105,6 +116,20 @@ export default function AddEntryDialog({ open, onClose, onSaved, scope, category
             </div>
           </div>
 
+          {/* Emission Factor Selector with country/year filtering, currency/inflation, custom EFs */}
+          <EmissionFactorSelector
+            category={efCategory}
+            locationId={form.location_id}
+            locations={locations}
+            reportingYear={2024}
+            spendCurrency={form.currency}
+            spendAmount={form.amount_paid}
+            selectedFactorId={selectedEF?.id}
+            onSelect={(factor, adj) => { setSelectedEF(factor); setEfAdjustment(adj); }}
+            onNoData={setNoDataFlagged}
+            noDataFlagged={noDataFlagged}
+          />
+
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label className="text-sm font-medium">Quantity</Label>
@@ -160,8 +185,21 @@ export default function AddEntryDialog({ open, onClose, onSaved, scope, category
             <Input className="mt-1" placeholder="Any additional context..." value={form.notes} onChange={e => set("notes", e.target.value)} />
           </div>
 
+          {/* No Data Banner */}
+          {noDataFlagged && (
+            <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+              <div className="flex items-center gap-2">
+                <Ban className="w-5 h-5 text-red-500 flex-shrink-0" />
+                <div>
+                  <div className="text-sm font-semibold text-red-700">No Data Available — Flagged</div>
+                  <div className="text-xs text-red-600 mt-0.5">Entry will be saved with 0 emissions and tagged for follow-up.</div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Estimated Emissions Preview */}
-          {parseFloat(form.quantity) > 0 && (
+          {parseFloat(form.quantity) > 0 && !noDataFlagged && (
             <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
               <div className="text-xs text-emerald-600 font-medium mb-0.5">Estimated Emissions</div>
               <div className="text-2xl font-bold text-emerald-800">{estimatedTCO2e.toFixed(4)} <span className="text-sm font-normal">tCO₂e</span></div>

@@ -1,0 +1,76 @@
+{
+  "name": "CustomEmissionFactor",
+  "type": "object",
+  "properties": {
+    "factor_name": {
+      "type": "string",
+      "title": "Factor Name"
+    },
+    "category": {
+      "type": "string",
+      "title": "Category",
+      "enum": [
+        "energy",
+        "fuel",
+        "travel",
+        "commute",
+        "transport",
+        "waste",
+        "material",
+        "refrigerant",
+        "heat_steam",
+        "process",
+        "water",
+        "spend_based"
+      ]
+    },
+    "country": {
+      "type": "string",
+      "title": "Country / Region"
+    },
+    "year": {
+      "type": "number",
+      "title": "Base Year"
+    },
+    "value": {
+      "type": "number",
+      "title": "Emission Factor Value"
+    },
+    "unit": {
+      "type": "string",
+      "title": "Unit (e.g. kgCO2e/kWh)"
+    },
+    "source": {
+      "type": "string",
+      "title": "Source / Reference"
+    },
+    "justification": {
+      "type": "string",
+      "title": "Justification (audit trail)"
+    },
+    "scope": {
+      "type": "string",
+      "title": "Applicable Scope"
+    },
+    "quality_tier": {
+      "type": "number",
+      "title": "Quality Tier (1=best, 4=estimated)",
+      "default": 3
+    },
+    "currency": {
+      "type": "string",
+      "title": "Currency (for spend-based factors)"
+    },
+    "is_active": {
+      "type": "boolean",
+      "title": "Active",
+      "default": true
+    }
+  },
+  "required": [
+    "factor_name",
+    "category",
+    "value",
+    "unit"
+  ]
+}
