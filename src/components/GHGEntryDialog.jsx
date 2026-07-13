@@ -142,18 +142,6 @@ export default function GHGEntryDialog({ open, onClose, onSaved, scope, category
   const isEnergy = !isHeatSteam && !isProcess && (category?.includes("Electr") || category?.includes("Heat") || category?.includes("Stationary") || scope === "Scope 2" || scope === "Scope 1 - Energy");
   const isWater = category?.includes("Water");
 
-  // Determine EF library category from dialog context
-  const efCategory = isEnergy ? (scope === "Scope 2" ? "energy" : "fuel")
-    : isTravel ? "travel"
-    : isCommute ? "commute"
-    : isRefrig ? "refrigerant"
-    : isWaste ? "waste"
-    : isHeatSteam ? "heat_steam"
-    : isProcess ? "process"
-    : isWater ? "water"
-    : isGoods ? (form.tier === "tier4" ? "spend_based" : "material")
-    : null;
-
   const [form, setForm] = useState({
     location_id: "", supplier: "", start_date: "", end_date: "", notes: "",
     source_name: "", status: "Draft",
@@ -184,6 +172,18 @@ export default function GHGEntryDialog({ open, onClose, onSaved, scope, category
   });
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
+  // Determine EF library category from dialog context
+  const efCategory = isEnergy ? (scope === "Scope 2" ? "energy" : "fuel")
+    : isTravel ? "travel"
+    : isCommute ? "commute"
+    : isRefrig ? "refrigerant"
+    : isWaste ? "waste"
+    : isHeatSteam ? "heat_steam"
+    : isProcess ? "process"
+    : isWater ? "water"
+    : isGoods ? (form.tier === "tier4" ? "spend_based" : "material")
+    : null;
 
   useEffect(() => { base44.entities.Location.list().then(setLocations); }, []);
   useEffect(() => { setForm(f => ({ ...f, ...defaultValues })); }, [open]);
